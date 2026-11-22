@@ -60,7 +60,7 @@ main() {
   # 3. 설치 또는 업데이트
   if [ -f "$DIR/AGENTS.md" ]; then
     say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
-    for s in prescan onboard collect inbox-sort wrap make-skill recall dashboard thickness-map; do
+    for s in prescan onboard collect inbox-sort wrap make-skill recall dashboard thickness-map excel-to-report meeting-brief foreign-matter-car cross-check; do
       to="$DIR/.agents/skills/$s"
       [ -e "$to" ] && rm -rf "$to"
       mkdir -p "$DIR/.agents/skills"

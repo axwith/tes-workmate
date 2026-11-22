@@ -1,6 +1,6 @@
 ---
 name: inbox-sort
-description: 00-inbox에 있는 파일을 업무 폴더로 정리한다. "인박스 정리", "받은 파일 정리해 줘", collect 다음 단계에 쓴다.
+description: 00-inbox에 있는 파일을 업무 폴더로 정리한다. "인박스 정리", "받은 파일 정리해 줘", "00-inbox 폴더별로 나눠 줘", "들어온 자료 제자리에", collect 다음 단계에 쓴다.
 ---
 
 # inbox-sort — 받은 자료를 업무 폴더로

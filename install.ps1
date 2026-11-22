@@ -54,7 +54,7 @@ if ($env:WORKMATE_FROM) {
 }
 
 # 3. 설치 또는 업데이트
-$skills = 'prescan','onboard','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map'
+$skills = 'prescan','onboard','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
 if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
   Say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
   foreach ($s in $skills) {
