@@ -1,0 +1,11 @@
+# 개인 업무 데이터는 저장소에 올리지 않는다 (설치된 워크스페이스에서만 쓰임)
+memory/scan/*
+!memory/scan/.gitkeep
+memory/state.md
+.DS_Store
+Thumbs.db
+memory/index.db*
+memory/sync-state.json
+.agents/skills/recall/scripts/sync-hidden.vbs
+memory/setup*.log
+__pycache__/

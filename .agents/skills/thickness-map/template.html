@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<style>
+  body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; margin: 24px; color: #222; background: #fff; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .note { color: #666; font-size: 13px; margin-bottom: 16px; }
+  .cards { display: flex; flex-wrap: wrap; gap: 20px; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; width: 760px; }
+  .card h2 { font-size: 16px; margin: 0 0 8px; }
+  .row { display: flex; gap: 16px; align-items: flex-start; }
+  table { border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  td, th { border: 1px solid #ddd; padding: 3px 8px; text-align: right; }
+  th { background: #f4f4f4; }
+  td:first-child, th:first-child { text-align: left; }
+  .legend { font-size: 12px; color: #444; }
+  .default { font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>__TITLE__</h1>
+<div class="note" id="note"></div>
+<div class="cards" id="cards"></div>
+<script>
+// ===== 여기만 바꾸면 된다 =====
+// DATA: 샘플 배열. points = [point_id, x_mm, y_mm, thickness_nm 또는 null(빈 값)]
+const DATA = __DATA__;
+const CONFIG = {
+  waferRadiusMm: 150,
+  edgeExclusionMm: __EDGE__,   // 0, 3, 5 ...  반경 <= waferRadiusMm - edgeExclusionMm 인 점만 계산
+  colorMin: __CMIN__,          // null 이면 샘플마다 자동. 샘플 비교 때는 숫자로 고정
+  colorMax: __CMAX__,
+  defaultFormula: "half"       // half | range | sigma  (AGENTS.md 기본 공식)
+};
+// ==============================
+
+function stats(vals) {
+  const n = vals.length;
+  const mean = vals.reduce((a, b) => a + b, 0) / n;
+  const max = Math.max(...vals), min = Math.min(...vals);
+  const sd = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / (n - 1)); // 표본표준편차(n-1)
+  return { n, mean, max, min, sd,
+    half: (max - min) / (2 * mean) * 100,
+    range: (max - min) / (max + min) * 100,
+    sigma: sd / mean * 100 };
+}
+function color(t) { // 0..1 -> 파랑(얇음)~노랑~빨강(두꺼움)
+  const stops = [[49,54,149],[69,117,180],[171,217,233],[255,255,191],[253,174,97],[215,48,39]];
+  t = Math.max(0, Math.min(1, t));
+  const p = t * (stops.length - 1), i = Math.min(Math.floor(p), stops.length - 2), f = p - i;
+  const c = stops[i].map((v, k) => Math.round(v + (stops[i + 1][k] - v) * f));
+  return c;
+}
+const R = CONFIG.waferRadiusMm, LIM = R - CONFIG.edgeExclusionMm;
+document.getElementById("note").textContent =
+  `가상 데이터 · 웨이퍼 반경 ${R} mm · edge exclusion ${CONFIG.edgeExclusionMm} mm (반경 ${LIM} mm 이내 점만 계산) · ` +
+  `색 범위 ${CONFIG.colorMin === null ? "샘플별 자동" : CONFIG.colorMin + "~" + CONFIG.colorMax + " nm 고정"} · 표준편차는 n-1 기준`;
+
+DATA.forEach(s => {
+  const all = s.points.map(p => ({ id: p[0], x: p[1], y: p[2], t: p[3], r: Math.hypot(p[1], p[2]) }));
+  const used = all.filter(p => p.t !== null && p.r <= LIM + 1e-9);
+  const missing = all.filter(p => p.t === null);
+  const st = stats(used.map(p => p.t));
+  const cmin = CONFIG.colorMin ?? st.min, cmax = CONFIG.colorMax ?? st.max;
+
+  const card = document.createElement("div"); card.className = "card";
+  const f = (v, d = 2) => v.toFixed(d);
+  const mark = k => k === CONFIG.defaultFormula ? ' class="default"' : "";
+  card.innerHTML = `<h2>${s.id}${s.label ? " · " + s.label : ""}</h2>
+    <div class="row"><canvas width="360" height="360"></canvas><svg width="370" height="360"></svg></div>
+    <div class="legend">색: 파랑=얇음, 빨강=두꺼움 (${f(cmin,1)} ~ ${f(cmax,1)} nm). 흰 테두리 점=계산 포함, 회색 X=제외·빈 값, 연회색 띠=edge exclusion 영역. 원 내부는 측정점 사이를 거리 가중(IDW)으로 채운 보간 그림이다.</div>
+    <table><tr><th>항목</th><th>값</th></tr>
+    <tr><td>계산에 쓴 점 수</td><td>${st.n} / 전체 ${all.length} (빈 값 ${missing.length}${missing.length ? ": point " + missing.map(p => p.id).join(",") : ""})</td></tr>
+    <tr><td>평균 (nm)</td><td>${f(st.mean)}</td></tr>
+    <tr><td>최대 / 최소 (nm)</td><td>${f(st.max,1)} / ${f(st.min,1)}</td></tr>
+    <tr${mark("half")}><td>반범위 (max-min)/(2·mean)</td><td>±${f(st.half)} %</td></tr>
+    <tr${mark("range")}><td>범위 (max-min)/(max+min)</td><td>${f(st.range)} %</td></tr>
+    <tr${mark("sigma")}><td>1σ/mean</td><td>${f(st.sigma)} %</td></tr></table>`;
+  document.getElementById("cards").appendChild(card);
+
+  // --- 원형 히트맵 (canvas, IDW) ---
+  const cv = card.querySelector("canvas"), ctx = cv.getContext("2d");
+  const W = cv.width, pad = 14, sc = (W / 2 - pad) / R, cx = W / 2, cy = W / 2;
+  const img = ctx.createImageData(W, W), src = all.filter(p => p.t !== null);
+  // 보간은 계산에 포함한 점(used)만 쓰고, 제외 영역(반경 > LIM)은 연회색으로 칠한다
+  for (let py = 0; py < W; py++) for (let px = 0; px < W; px++) {
+    const x = (px - cx) / sc, y = (cy - py) / sc;
+    const rr = Math.hypot(x, y), o = (py * W + px) * 4;
+    if (rr > R) continue;
+    if (rr > LIM + 1e-9) { img.data[o] = img.data[o + 1] = img.data[o + 2] = 225; img.data[o + 3] = 255; continue; }
+    let num = 0, den = 0, hit = null;
+    for (const p of used) { const d2 = (p.x - x) ** 2 + (p.y - y) ** 2; if (d2 < 1e-6) { hit = p.t; break; } const w = 1 / d2; num += w * p.t; den += w; }
+    const v = hit ?? num / den, c = color((v - cmin) / (cmax - cmin || 1));
+    img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.strokeStyle = "#333"; ctx.beginPath(); ctx.arc(cx, cy, R * sc, 0, 2 * Math.PI); ctx.stroke();
+  if (CONFIG.edgeExclusionMm > 0) { ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(cx, cy, LIM * sc, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+  all.forEach(p => {
+    const X = cx + p.x * sc, Y = cy - p.y * sc, inc = p.t !== null && p.r <= LIM + 1e-9;
+    if (inc) { ctx.fillStyle = "#000"; ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.arc(X, Y, 2.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); }
+    else { ctx.strokeStyle = "#777"; ctx.beginPath(); ctx.moveTo(X - 3, Y - 3); ctx.lineTo(X + 3, Y + 3); ctx.moveTo(X + 3, Y - 3); ctx.lineTo(X - 3, Y + 3); ctx.stroke(); }
+  });
+
+  // --- 반경별 프로파일 (SVG) ---
+  const svg = card.querySelector("svg"), NS = "http://www.w3.org/2000/svg";
+  const L = 48, T = 14, PW = 300, PH = 290;
+  const tv = src.map(p => p.t), ymin = Math.min(...tv), ymax = Math.max(...tv), yr = (ymax - ymin) || 1;
+  const X = r => L + r / R * PW, Y = t => T + PH - (t - (ymin - yr * 0.05)) / (yr * 1.1) * PH;
+  const add = (tag, a, text) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (text) e.textContent = text; svg.appendChild(e); return e; };
+  add("rect", { x: L, y: T, width: PW, height: PH, fill: "none", stroke: "#999" });
+  for (let r = 0; r <= R; r += 50) { add("line", { x1: X(r), x2: X(r), y1: T + PH, y2: T + PH + 4, stroke: "#999" }); add("text", { x: X(r), y: T + PH + 16, "font-size": 11, "text-anchor": "middle" }, r); }
+  for (let i = 0; i <= 4; i++) { const t = ymin + yr * i / 4; add("text", { x: L - 4, y: Y(t) + 4, "font-size": 11, "text-anchor": "end" }, t.toFixed(0)); }
+  add("text", { x: L + PW / 2, y: T + PH + 32, "font-size": 12, "text-anchor": "middle" }, "중심에서 거리 r (mm)");
+  add("text", { x: 12, y: T + PH / 2, "font-size": 12, transform: `rotate(-90 12 ${T + PH / 2})`, "text-anchor": "middle" }, "두께 (nm)");
+  if (CONFIG.edgeExclusionMm > 0) add("line", { x1: X(LIM), x2: X(LIM), y1: T, y2: T + PH, stroke: "#777", "stroke-dasharray": "4 3" });
+  const rings = {}; src.forEach(p => { const k = Math.round(p.r); (rings[k] = rings[k] || []).push(p.t); });
+  const keys = Object.keys(rings).map(Number).sort((a, b) => a - b);
+  add("polyline", { points: keys.map(k => `${X(k)},${Y(rings[k].reduce((a, b) => a + b, 0) / rings[k].length)}`).join(" "), fill: "none", stroke: "#c0392b", "stroke-width": 2 });
+  src.forEach(p => add("circle", { cx: X(p.r), cy: Y(p.t), r: 3, fill: p.r <= LIM + 1e-9 ? "#2c3e50" : "#bbb" }));
+  add("text", { x: L + 6, y: T + 14, "font-size": 11, fill: "#c0392b" }, "빨간 선 = 같은 반경 점들의 평균");
+});
+</script>
+</body>
+</html>
