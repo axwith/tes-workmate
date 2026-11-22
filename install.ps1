@@ -1,5 +1,5 @@
 ﻿# workmate (Codex) 설치기 — Windows PowerShell 5.1 이상
-#   irm https://raw.githubusercontent.com/axwith/tes-workmate/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/axwith/tes-workmate/main/get.ps1 | iex   (get.ps1이 이 파일을 받아 -File로 실행한다. 이 파일을 iex로 직접 돌리면 BOM 때문에 깨진다)
 #   또는 받은 폴더에서: powershell -ExecutionPolicy Bypass -File install.ps1
 # 옵션(환경변수): WORKMATE_DIR=설치 위치(기본 문서\workmate), WORKMATE_FROM=로컬 원본 폴더, WORKMATE_SCAN_ROOTS=스캔할 폴더(;로 구분, 지정하면 그 폴더만)
 # git이 없으면 묻지 않고 설치한다(MinGit을 사용자 폴더에, 관리자 권한 불필요. 실패하면 winget).
@@ -66,7 +66,7 @@ if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
   }
 } else {
   New-Item -ItemType Directory -Force -Path $Dir | Out-Null
-  Get-ChildItem -LiteralPath $src -Force | Where-Object { -not $_.Name.StartsWith('._') -and $_.Name -notin '.git','.gitattributes','install.ps1','install.sh','README.md','LICENSE','tests' } |
+  Get-ChildItem -LiteralPath $src -Force | Where-Object { -not $_.Name.StartsWith('._') -and $_.Name -notin '.git','.gitattributes','install.ps1','install.sh','get.ps1','README.md','LICENSE','tests' } |
     ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $Dir $_.Name) -Recurse -Force }
   if ($git) {
     Push-Location $Dir
@@ -87,7 +87,7 @@ if (-not ((Test-Path $cfg) -and (Get-Content $cfg -Raw -Encoding UTF8).Contains(
 # 4. 기억 자동 정리 등록: 1시간마다·로그인 때 대화 기록을 옮기고 검색 색인을 만든다(AI 없이, 창 없이)
 $sync = Join-Path $Dir '.agents\skills\recall\scripts\sync.ps1'
 $vbs = Join-Path $Dir '.agents\skills\recall\scripts\sync-hidden.vbs'
-Set-Content -LiteralPath $vbs -Encoding ASCII -Value ('CreateObject("WScript.Shell").Run "powershell -NoProfile -ExecutionPolicy Bypass -File ""' + $sync + '"" -Quiet", 0, False')
+Set-Content -LiteralPath $vbs -Encoding Unicode -Value ('CreateObject("WScript.Shell").Run "powershell -NoProfile -ExecutionPolicy Bypass -File ""' + $sync + '"" -Quiet", 0, False')
 $tn = 'workmate-sync-' + ([BitConverter]::ToString([Security.Cryptography.MD5]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Dir.ToLower()))) -replace '-','').Substring(0,8)
 schtasks /Create /F /SC HOURLY /TN $tn /TR "wscript.exe `"$vbs`"" | Out-Null
 if ($LASTEXITCODE -eq 0) { Say "기억 자동 정리를 1시간마다 돌도록 등록했습니다($tn)." } else { Say '기억 자동 정리 등록에 실패했습니다. 대화를 시작할 때마다 정리됩니다.' }

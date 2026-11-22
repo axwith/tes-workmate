@@ -76,7 +76,7 @@ main() {
       [ -e "$item" ] || continue
       name="${item##*/}"
       case "$name" in
-        ._*|.git|.gitattributes|install.ps1|install.sh|README.md|LICENSE|tests) continue ;;
+        ._*|.git|.gitattributes|install.ps1|install.sh|get.ps1|README.md|LICENSE|tests) continue ;;
       esac
       cp -R "$item" "$DIR/"
     done

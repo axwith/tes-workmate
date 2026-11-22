@@ -11,7 +11,7 @@
 **Windows** — PowerShell을 열고 아래 한 줄을 붙여 넣습니다.
 
 ```powershell
-irm https://raw.githubusercontent.com/axwith/tes-workmate/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/axwith/tes-workmate/main/get.ps1 | iex
 ```
 
 **Mac** — 터미널을 열고 아래 한 줄을 붙여 넣습니다.
