@@ -42,7 +42,9 @@ $tmp = Join-Path $env:TEMP ("workmate-src-" + [guid]::NewGuid().ToString('N').Su
 if ($env:WORKMATE_FROM) {
   $src = $env:WORKMATE_FROM
 } elseif ($git) {
+  $ErrorActionPreference = 'Continue'   # git은 진행 안내를 stderr로 쓴다. PS 5.1은 이를 오류로 바꿔 Stop에서 멈춘다
   git clone --depth 1 "https://github.com/$Repo.git" $tmp 2>&1 | Out-Null
+  $ErrorActionPreference = 'Stop'
   if (-not (Test-Path (Join-Path $tmp 'AGENTS.md'))) { throw "원본을 받지 못했습니다(https://github.com/$Repo). 비공개 저장소면 GitHub 로그인이 필요합니다." }
   $src = $tmp
 } else {
@@ -70,7 +72,9 @@ if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
     ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $Dir $_.Name) -Recurse -Force }
   if ($git) {
     Push-Location $Dir
-    git init -q; git config core.autocrlf false; git config core.quotepath false; git add -A 2>$null; git -c user.name=workmate -c user.email=workmate@local commit -q -m "workmate 설치" | Out-Null
+    $ErrorActionPreference = 'Continue'
+    git init -q; git config core.autocrlf false; git config core.quotepath false; git add -A 2>$null; git -c user.name=workmate -c user.email=workmate@local commit -q -m "workmate 설치" 2>&1 | Out-Null
+    $ErrorActionPreference = 'Stop'
     Pop-Location
   }
 }

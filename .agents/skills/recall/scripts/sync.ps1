@@ -82,8 +82,10 @@ if ((Test-Path $scanPs) -and (-not (Test-Path $csv) -or (Get-Item $csv).LastWrit
 $committed = $false
 if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-Path $ws '.git'))) {
   if (git -C $ws status --porcelain 2>$null) {
+    $ErrorActionPreference = 'Continue'   # git stderr 안내가 Stop에서 오류로 바뀌지 않게
     git -C $ws add -A 2>$null
     git -C $ws -c user.name=workmate -c user.email=workmate@local commit -q -m ("자동 기록 " + (Get-Date -Format 'yyyy-MM-dd HH:mm')) 2>$null | Out-Null
+    $ErrorActionPreference = 'Stop'
     $committed = $true
   }
 }
