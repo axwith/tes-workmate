@@ -1,6 +1,6 @@
 # 테스 workmate — 내 업무 공간 (Codex)
 
-테스 임직원 Codex 실습 교육 3교시 "Codex 활용하기"에서 쓰는 워크스페이스입니다. 설치하면 최근에 쓰던 업무 파일을 이 PC 안에서 읽어 내 업무에 맞게 미리 세팅되고, `/onboarding` 한 번으로 실제 업무 중심 셋업을 단계별로 시작합니다.
+테스 임직원 Codex 실습 교육 3교시 "내 업무 공간 셋업"에서 쓰는 워크스페이스입니다. 설치하면 최근에 쓰던 업무 파일을 이 PC 안에서 읽어 내 업무에 맞게 미리 세팅되고, `/onboarding` 한 번으로 실제 업무 중심 셋업을 단계별로 시작합니다.
 
 - 분석은 내 PC의 Codex 안에서만 합니다. 파일을 외부로 보내지 않습니다.
 - 최근 업무 파일이 거의 없으면 직무별 가상 예시 자료(연구소·CS·제조·품질·지원)로 세팅됩니다.
@@ -21,7 +21,7 @@ irm https://raw.githubusercontent.com/axwith/tes-workmate/main/get.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/axwith/tes-workmate/main/install.sh | bash
 ```
 
-설치 중 주 업무 폴더를 묻습니다. 경로를 입력하면 그 폴더만 먼저 사전 스캔하고, Enter를 누르면 기본 검색을 사용합니다. 설치가 끝나면(2~4분) 폴더가 열립니다(Windows `문서\3교시-Codex-활용하기`, Mac `~/Documents/3교시-Codex-활용하기`). 출력에서 선택 경로·발견 파일 수·본문 추출 수를 확인할 수 있습니다.
+설치 중 주 업무 폴더를 묻습니다. 경로를 입력하면 그 폴더만 먼저 사전 스캔하고, Enter를 누르면 기본 검색을 사용합니다. 설치가 끝나면(2~4분) 폴더가 열립니다(Windows `문서\tes-workmate`, Mac `~/Documents/tes-workmate`). 출력에서 선택 경로·발견 파일 수·본문 추출 수를 확인할 수 있습니다.
 
 1. Codex 앱에서 그 폴더를 프로젝트로 엽니다.
 2. `/onboarding`을 실행하거나 "온보딩 해 줘"라고 보냅니다.
