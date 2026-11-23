@@ -14,7 +14,7 @@ cx = os.path.join(tmp, 'codex')
 for d in ['.agents/skills', 'memory/wiki/decisions', 'memory/sessions', '20-operations/월간품질보고']:
     os.makedirs(os.path.join(ws, d), exist_ok=True)
 os.makedirs(os.path.join(cx, 'sessions/2026/11/20'))
-shutil.copytree(os.path.join(REPO, '.agents/skills/recall'), os.path.join(ws, '.agents/skills/recall'),
+shutil.copytree(os.path.join(REPO, '.agents/skills/wrap'), os.path.join(ws, '.agents/skills/wrap'),
                 ignore=shutil.ignore_patterns('__pycache__'))
 
 
@@ -48,7 +48,7 @@ with open(os.path.join(cx, 'sessions/2026/11/20/rollout-b.jsonl'), 'w', encoding
     f.write('\n'.join(other) + '\n')
 
 env = dict(os.environ, CODEX_HOME=cx)
-r = os.path.join(ws, '.agents/skills/recall/scripts')
+r = os.path.join(ws, '.agents/skills/wrap/scripts')
 py = sys.executable
 fail = 0
 

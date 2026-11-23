@@ -7,6 +7,6 @@ memory/onboarding-state.md
 Thumbs.db
 memory/index.db*
 memory/sync-state.json
-.agents/skills/recall/scripts/sync-hidden.vbs
+.agents/skills/wrap/scripts/sync-hidden.vbs
 memory/setup*.log
 __pycache__/

@@ -54,7 +54,7 @@ if ($env:WORKMATE_FROM) {
 }
 
 # 3. 설치 또는 업데이트
-$skills = 'prescan','onboard','onboarding','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
+$skills = 'prescan','onboard','inbox-sort','wrap','dashboard','thickness-map','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
 if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
   Say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
   foreach ($s in $skills) {
@@ -89,8 +89,8 @@ if (-not ((Test-Path $cfg) -and (Get-Content $cfg -Raw -Encoding UTF8).Contains(
 }
 
 # 4. 기억 자동 정리 등록: 1시간마다·로그인 때 대화 기록을 옮기고 검색 색인을 만든다(AI 없이, 창 없이)
-$sync = Join-Path $Dir '.agents\skills\recall\scripts\sync.ps1'
-$vbs = Join-Path $Dir '.agents\skills\recall\scripts\sync-hidden.vbs'
+$sync = Join-Path $Dir '.agents\skills\wrap\scripts\sync.ps1'
+$vbs = Join-Path $Dir '.agents\skills\wrap\scripts\sync-hidden.vbs'
 Set-Content -LiteralPath $vbs -Encoding Unicode -Value ('CreateObject("WScript.Shell").Run "powershell -NoProfile -ExecutionPolicy Bypass -File ""' + $sync + '"" -Quiet", 0, False')
 $tn = 'workmate-sync-' + ([BitConverter]::ToString([Security.Cryptography.MD5]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Dir.ToLower()))) -replace '-','').Substring(0,8)
 schtasks /Create /F /SC HOURLY /TN $tn /TR "wscript.exe `"$vbs`"" | Out-Null
@@ -121,5 +121,5 @@ Say "본문 추출 수: ${text}개"
 Write-Host "`n설치 완료: $Dir`n"
 Say '다음:'
 Say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
-Say '2. 대화창에 @onboarding 을 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
+Say '2. 대화창에 @onboard를 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
 Start-Process explorer.exe $Dir

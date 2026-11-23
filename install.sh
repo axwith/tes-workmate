@@ -60,7 +60,7 @@ main() {
   # 3. 설치 또는 업데이트
   if [ -f "$DIR/AGENTS.md" ]; then
     say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
-    for s in prescan onboard onboarding collect inbox-sort wrap make-skill recall dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check; do
+    for s in prescan onboard inbox-sort wrap dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check; do
       to="$DIR/.agents/skills/$s"
       [ -e "$to" ] && rm -rf "$to"
       mkdir -p "$DIR/.agents/skills"
@@ -100,7 +100,7 @@ main() {
   fi
 
   # 4. 기억 자동 정리 등록: 1시간마다 대화 기록을 옮기고 검색 색인을 만든다(AI 없이, 창 없이)
-  SYNC="$DIR/.agents/skills/recall/scripts/sync.py"
+  SYNC="$DIR/.agents/skills/wrap/scripts/sync.py"
   HASH="$(printf '%s' "$DIR" | tr '[:upper:]' '[:lower:]' | md5 | cut -c1-8)"
   LABEL="com.workmate.sync.$HASH"
   PLIST_DIR="${WORKMATE_PLIST_DIR:-$HOME/Library/LaunchAgents}"
@@ -185,7 +185,7 @@ EOF
   printf '\n설치 완료: %s\n\n' "$DIR"
   say '다음:'
   say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
-  say '2. 대화창에 @onboarding 을 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
+  say '2. 대화창에 @onboard를 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
   [ -z "$WORKMATE_NO_OPEN" ] && open "$DIR" </dev/null
   return 0
 }

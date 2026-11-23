@@ -6,7 +6,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $tmp = Join-Path $env:TEMP ('wm-recall-test-' + [guid]::NewGuid().ToString('N').Substring(0, 6))
 $ws = Join-Path $tmp 'workmate'; $cx = Join-Path $tmp 'codex'
 New-Item -ItemType Directory -Force "$ws\.agents\skills", "$ws\memory\wiki\decisions", "$ws\memory\sessions", "$ws\20-operations\월간품질보고", "$cx\sessions\2026\11\20" | Out-Null
-Copy-Item "$repo\.agents\skills\recall" "$ws\.agents\skills\recall" -Recurse
+Copy-Item "$repo\.agents\skills\wrap" "$ws\.agents\skills\wrap" -Recurse
 $utf = New-Object Text.UTF8Encoding $false
 function W($p, $t) { [IO.File]::WriteAllText((Join-Path $ws $p), $t, $utf) }
 W 'AGENTS.md' "# workmate`n보고는 결과부터."
@@ -25,7 +25,7 @@ $other = @((J @{type='session_meta';payload=@{id='ccccdddd-0000-0000-0000-000000
 [IO.File]::WriteAllLines("$cx\sessions\2026\11\20\rollout-b.jsonl", $other, $utf)
 
 $env:CODEX_HOME = $cx
-$r = "$ws\.agents\skills\recall\scripts"
+$r = "$ws\.agents\skills\wrap\scripts"
 $fail = 0
 function Check($name, $cond) { if ($cond) { "통과  $name" } else { "실패  $name"; $script:fail++ } }
 $out1 = powershell -NoProfile -ExecutionPolicy Bypass -File "$r\sync.ps1"
