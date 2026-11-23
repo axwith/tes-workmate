@@ -325,7 +325,7 @@ workmate/
 **이 프리셋이 맞는 경우**:
 - 직무를 선택하지 않음 / "모르겠어요" / "여러 가지 섞여 있어요"
 - 스타트업·소기업에서 한 사람이 여러 역할 겸임
-- 구체적인 카테고리가 필요할 때 나중에 `/onboarding --preset-reset`으로 다시 제안 받을 수 있음
+- 구체적인 카테고리가 필요할 때 나중에 `@onboarding --preset-reset`으로 다시 제안 받을 수 있음
 
 ---
 
@@ -377,7 +377,7 @@ Phase 1에서 수집한 `profile` 값으로 위 9개 프리셋 중 하나 선택
     "header": "프리셋 적용",
     "options": [
       {"label": "적용 (추천)", "description": "위 폴더를 모두 생성합니다. 기존 파일은 그대로 유지됩니다."},
-      {"label": "건너뛰기", "description": "폴더를 만들지 않습니다. 나중에 /onboarding --preset-reset으로 다시 제안받을 수 있어요."},
+      {"label": "건너뛰기", "description": "폴더를 만들지 않습니다. 나중에 @onboarding --preset-reset으로 다시 제안받을 수 있어요."},
       {"label": "일부만 적용", "description": "어떤 폴더만 만들지 알려주세요."}
     ],
     "multiSelect": false
@@ -408,8 +408,8 @@ folder_preset:
 
 ### 단계 5: 재제안 차단
 
-`folder_preset.applied == true`면 다음 `/onboarding` 실행 시 Phase 5를 자동 스킵합니다.
-사용자가 명시적으로 `/onboarding --preset-reset`을 호출하면 재제안 가능.
+`folder_preset.applied == true`면 다음 `@onboarding` 실행 시 Phase 5를 자동 스킵합니다.
+사용자가 명시적으로 `@onboarding --preset-reset`을 호출하면 재제안 가능.
 
 ---
 
@@ -417,7 +417,7 @@ folder_preset:
 
 1. **기존 폴더와 충돌 시**: `mkdir -p`는 이미 있는 폴더를 덮어쓰지 않습니다. 내부 파일은 그대로 유지됩니다.
 2. **이름 변경**: 사용자가 `20-production/` 대신 `생산/`으로 쓰고 싶다면 Phase 5 선택지에서 "일부만 적용"으로 커스터마이즈 가능.
-3. **직무 변경 시**: 나중에 직무가 바뀌면 `/onboarding --preset-reset`으로 새 프리셋 제안 받을 수 있습니다. 기존 폴더는 건드리지 않습니다.
+3. **직무 변경 시**: 나중에 직무가 바뀌면 `@onboarding --preset-reset`으로 새 프리셋 제안 받을 수 있습니다. 기존 폴더는 건드리지 않습니다.
 4. **여러 프리셋 혼합**: 한 사람이 생산관리 + 품질 겸임이면 Phase 5에서 "일부만 적용"으로 두 프리셋을 합쳐서 쓸 수 있습니다.
 5. **40-personal 유지**: 기존 `40-personal/` 폴더가 있다면 건드리지 않습니다. 제조업 맥락에서 사용 빈도가 낮지만 사용자 결정에 맡김.
 

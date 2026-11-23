@@ -6,7 +6,7 @@
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $Repo = 'axwith/tes-workmate'
-$Dir = if ($env:WORKMATE_DIR) { $env:WORKMATE_DIR } else { Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'tes-workmate' }
+$Dir = if ($env:WORKMATE_DIR) { $env:WORKMATE_DIR } else { Join-Path ([Environment]::GetFolderPath('MyDocuments')) '3교시-Codex-활용하기' }
 function Say($m) { Write-Host "  $m" }
 
 Write-Host "`nworkmate 설치를 시작합니다 → $Dir`n"
@@ -54,13 +54,13 @@ if ($env:WORKMATE_FROM) {
 }
 
 # 3. 설치 또는 업데이트
-$skills = 'prescan','onboard','onboarding','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map','onboarding','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
+$skills = 'prescan','onboard','onboarding','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
 if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
   Say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
   foreach ($s in $skills) {
     $to = Join-Path $Dir ".agents\skills\$s"
-    if (Test-Path $to) { Remove-Item $to -Recurse -Force }
-    Copy-Item (Join-Path $src ".agents\skills\$s") $to -Recurse -Force
+    if (Test-Path $to) { try { Remove-Item $to -Recurse -Force } catch { Start-Sleep 2; Remove-Item $to -Recurse -Force -ErrorAction SilentlyContinue } }
+    if (Test-Path $to) { Copy-Item (Join-Path $src ".agents\skills\$s\*") $to -Recurse -Force } else { Copy-Item (Join-Path $src ".agents\skills\$s") $to -Recurse -Force }
   }
   if ((Get-FileHash (Join-Path $src 'AGENTS.md')).Hash -ne (Get-FileHash (Join-Path $Dir 'AGENTS.md')).Hash) {
     Copy-Item (Join-Path $src 'AGENTS.md') (Join-Path $Dir 'AGENTS.md.new') -Force
@@ -115,11 +115,11 @@ $csvPath = Join-Path $Dir 'memory\scan\recent-files.csv'
 $found = if (Test-Path $csvPath) { @(Import-Csv $csvPath -Encoding UTF8).Count } else { 0 }
 $textDir = Join-Path $Dir 'memory\scan\text'
 $text = if (Test-Path $textDir) { @(Get-ChildItem $textDir -File).Count } else { 0 }
-Say "발견 파일 수: $found개"
-Say "본문 추출 수: $text개"
+Say "발견 파일 수: ${found}개"
+Say "본문 추출 수: ${text}개"
 
 Write-Host "`n설치 완료: $Dir`n"
 Say '다음:'
 Say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
-Say '2. "온보딩 해 줘"라고 보내 설치된 자료를 확인하고 세팅합니다.'
+Say '2. 대화창에 @onboarding 을 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
 Start-Process explorer.exe $Dir

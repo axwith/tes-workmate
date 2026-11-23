@@ -2,7 +2,7 @@
   "_설명": "자연어 요청 → 기대 스킬. expected가 null이면 스킬 없이 직접 처리해야 하는 요청(규칙 추가 포함). tests/routing-run.py가 실제 codex exec로 어떤 SKILL.md를 열었는지 본다.",
   "cases": [
     {"id": "p1", "text": "자료 읽고 PPT 초안 만들어 줘", "expected": "ppt-draft"},
-    {"id": "p2", "text": "/ppt-draft", "expected": "ppt-draft"},
+    {"id": "p2", "text": "@ppt-draft", "expected": "ppt-draft"},
     {"id": "e1", "text": "수입검사 결과 엑셀 9월 10월 11월 거 합쳐서 불량 왜 늘었는지 원인 분석해 줘", "expected": "excel-to-report"},
     {"id": "e2", "text": "이번 분기 검사 데이터 파일들 엮어서 경영진 보고용 PPT로 만들어 줘", "expected": "excel-to-report"},
     {"id": "e3", "text": "엑셀 몇 개 있는데 같이 놓고 문제 시점이랑 원인 좀 찾아 줄래", "expected": "excel-to-report"},
@@ -35,7 +35,7 @@
     {"id": "b1", "text": "온보딩 다시 하자", "expected": "onboard"},
     {"id": "b2", "text": "세팅 다시 확인해 줘", "expected": "onboard"},
     {"id": "b3", "text": "처음 설정해 둔 거 다시 보자", "expected": "onboard"},
-    {"id": "b4", "text": "/onboarding", "expected": "onboard"},
+    {"id": "b4", "text": "@onboarding", "expected": "onboard"},
     {"id": "b5", "text": "내 업무 공간을 만들자", "expected": "onboard"},
     {"id": "n1", "text": "Cpk가 뭐야? 쉽게 설명해 줘", "expected": null},
     {"id": "n2", "text": "협력사에 납기 늦어서 죄송하다는 메일 문구 다듬어 줘: 납기 지연되어 죄송합니다 다음주 화요일까지 보내드리겠습니다", "expected": null},

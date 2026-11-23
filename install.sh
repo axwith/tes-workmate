@@ -9,7 +9,7 @@
 
 main() {
   REPO='axwith/tes-workmate'
-  DIR="${WORKMATE_DIR:-$HOME/Documents/tes-workmate}"
+  DIR="${WORKMATE_DIR:-$HOME/Documents/3교시-Codex-활용하기}"
   RT="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies"
   say() { printf '  %s\n' "$1"; }
   has_clt() { xcode-select -p >/dev/null 2>&1; }   # 없으면 /usr/bin/git·python3이 설치 창을 띄운다
@@ -60,7 +60,7 @@ main() {
   # 3. 설치 또는 업데이트
   if [ -f "$DIR/AGENTS.md" ]; then
     say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
-    for s in prescan onboard onboarding collect inbox-sort wrap make-skill recall dashboard thickness-map onboarding ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check; do
+    for s in prescan onboard onboarding collect inbox-sort wrap make-skill recall dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check; do
       to="$DIR/.agents/skills/$s"
       [ -e "$to" ] && rm -rf "$to"
       mkdir -p "$DIR/.agents/skills"
@@ -178,14 +178,14 @@ EOF
     FOUND=0; TEXT=0
     [ -f "$CSV" ] && FOUND=$("$PY" -c 'import csv,sys; print(len(list(csv.DictReader(open(sys.argv[1], encoding="utf-8-sig")))))' "$CSV" 2>/dev/null || echo 0)
     [ -d "$DIR/memory/scan/text" ] && TEXT=$(find "$DIR/memory/scan/text" -type f | wc -l | tr -d ' ')
-    say "발견 파일 수: $FOUND개"
-    say "본문 추출 수: $TEXT개"
+    say "발견 파일 수: ${FOUND}개"
+    say "본문 추출 수: ${TEXT}개"
   fi
 
   printf '\n설치 완료: %s\n\n' "$DIR"
   say '다음:'
   say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
-  say '2. "온보딩 해 줘"라고 보내 설치된 자료를 확인하고 세팅합니다.'
+  say '2. 대화창에 @onboarding 을 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
   [ -z "$WORKMATE_NO_OPEN" ] && open "$DIR" </dev/null
   return 0
 }

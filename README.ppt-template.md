@@ -1,6 +1,6 @@
 # TES 공통 PPT 템플릿 (내부 교육용)
 
-`/ppt-draft`가 쓰는 공통 템플릿입니다. 업무 내용은 넣지 않고 자리표시자만 둡니다.
+`@ppt-draft`가 쓰는 공통 템플릿입니다. 업무 내용은 넣지 않고 자리표시자만 둡니다.
 
 - 생성기: `.agents/skills/ppt-draft/scripts/build_template.py`의 `Deck` 클래스. 견본 덱은 `tes-template.pptx`(16장, 모두 편집 가능한 텍스트·도형)
 - 그래프: `.agents/skills/ppt-draft/scripts/charts.py`(파레토 등 PPT 차트로 어려운 그래프)
