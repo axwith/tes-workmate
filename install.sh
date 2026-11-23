@@ -9,7 +9,7 @@
 
 main() {
   REPO='axwith/tes-workmate'
-  DIR="${WORKMATE_DIR:-$HOME/Documents/tes-workmate}"
+  DIR="${WORKMATE_DIR:-$HOME/Documents/3교시-Codex-활용하기}"
   RT="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies"
   say() { printf '  %s\n' "$1"; }
   has_clt() { xcode-select -p >/dev/null 2>&1; }   # 없으면 /usr/bin/git·python3이 설치 창을 띄운다
@@ -178,8 +178,8 @@ EOF
     FOUND=0; TEXT=0
     [ -f "$CSV" ] && FOUND=$("$PY" -c 'import csv,sys; print(len(list(csv.DictReader(open(sys.argv[1], encoding="utf-8-sig")))))' "$CSV" 2>/dev/null || echo 0)
     [ -d "$DIR/memory/scan/text" ] && TEXT=$(find "$DIR/memory/scan/text" -type f | wc -l | tr -d ' ')
-    say "발견 파일 수: $FOUND개"
-    say "본문 추출 수: $TEXT개"
+    say "발견 파일 수: ${FOUND}개"
+    say "본문 추출 수: ${TEXT}개"
   fi
 
   printf '\n설치 완료: %s\n\n' "$DIR"

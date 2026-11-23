@@ -59,33 +59,69 @@ def col(i, span=1):
     return x, span * COLW + (span - 1) * GUT
 
 
-def _char_w(ch, size_px):
-    """글자 하나의 대략 폭(px). 한글·한자 1.0, 영문·숫자 0.58, 공백 0.3, 기호 0.4."""
-    o = ord(ch)
+_FONT_FILES = {  # 맑은 고딕 실제 글꼴 파일(있으면 글자 폭을 실측한다)
+    False: ['C:/Windows/Fonts/malgun.ttf',
+            '/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts/malgun.ttf'],
+    True: ['C:/Windows/Fonts/malgunbd.ttf',
+           '/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts/malgunbd.ttf'],
+}
+_font_cache = {}
+
+
+def _font(bold):
+    if bold not in _font_cache:
+        _font_cache[bold] = None
+        try:
+            from PIL import ImageFont
+            for f in _FONT_FILES[bold]:
+                if Path(f).exists():
+                    _font_cache[bold] = ImageFont.truetype(f, 100)
+                    break
+        except Exception:
+            pass
+    return _font_cache[bold]
+
+
+def _char_w(ch, size_px, bold=False):
+    """글자 하나의 폭(px). 맑은 고딕이 있으면 실측, 없으면 맑은 고딕 실측값에 맞춘 근사."""
+    f = _font(bold)
+    if f is not None:
+        return f.getlength(ch) / 100 * size_px
+    k = 1.05 if bold else 1.0
     if ch == ' ':
-        return size_px * 0.3
-    if o >= 0x1100:
-        return size_px * 1.0
+        return size_px * 0.35 * k
+    if ord(ch) >= 0x1100 and ch not in '·→←–—':
+        return size_px * 1.0 * k
+    if ch in '%@&WMmw':
+        return size_px * 0.85 * k
     if ch.isalnum():
-        return size_px * 0.58
-    return size_px * 0.4
+        return size_px * 0.6 * k
+    return size_px * 0.3 * k
 
 
 def count_lines(value, w, size_pt, bold=False, report=None):
-    """단어 단위 줄바꿈을 흉내 내 줄 수를 센다(PowerPoint 렌더와 ±1 이내).
+    """PowerPoint처럼 단어 단위로 줄을 바꿔 줄 수를 센다. 칸보다 긴 단어는 글자 단위로 끊는다.
     report 리스트를 주면 자동 줄바꿈 뒤 끝줄이 너무 짧은 경우(한 단어만 떨어짐)를 적는다."""
-    size_px = size_pt * 2 * (1.05 if bold else 1.0)
+    size_px = size_pt * 2
     total = 0
     for para in (value if isinstance(value, list) else [value]):
         for chunk in str(para).split('\n'):
             n, cur = 1, 0.0
             for word in chunk.split(' '):
-                ww = sum(_char_w(c, size_px) for c in word)
-                sp = _char_w(' ', size_px) if cur else 0
+                ww = sum(_char_w(c, size_px, bold) for c in word)
+                sp = _char_w(' ', size_px, bold) if cur else 0
                 if cur and cur + sp + ww > w:
-                    n, cur = n + 1, ww
-                else:
+                    n, cur = n + 1, 0.0
+                    sp = 0
+                if cur + sp + ww <= w:
                     cur += sp + ww
+                    continue
+                cur += sp
+                for c in word:  # 칸보다 긴 단어: 글자 단위로 넘김
+                    cw = _char_w(c, size_px, bold)
+                    if cur and cur + cw > w:
+                        n, cur = n + 1, 0.0
+                    cur += cw
             if n > 1 and cur < w * 0.3 and report is not None:
                 report.append(chunk)
             total += n
@@ -105,7 +141,7 @@ class Deck:
         self.prs.slide_height = px(H)
         self.logo = a / 'tes-logo.png'
         self.icons = a / 'icons'
-        self.img = {k: a / f'{k}.png' for k in ('cover-photo', 'wafer', 'section-bg', 'closing-photo')}
+        self.img = {k: a / f'{k}.png' for k in ('cover-wafer', 'cover-fab', 'section-bg', 'closing-photo')}
         self.page = 0
         self.section = ('01', '섹션 이름')
         self.source = '출처: 출처를 입력하세요  |  원자료: 파일 경로'   # 덱 전체 기본 출처
@@ -220,7 +256,9 @@ class Deck:
         self.text(s, f'{self.page}', W - M - 60, FOOT_Y + 24, 60, 30, 11, FAINT, align=PP_ALIGN.RIGHT)
 
     def band(self, s, msg):
-        """숫자가 있는 장 아래 결론 띠(TES IR 방식, 네이비)."""
+        """숫자가 있는 장 아래 결론 띠(TES IR 방식, 네이비). 무엇이 어떤지와 그래서 무엇을 할지를 한 문장으로."""
+        if msg and len(msg.replace(' ', '')) < 18:
+            self.warnings.append(f'{self.page}장 결론 띠가 꼬리표처럼 짧음(무엇이 어떤지·그래서 무엇을 할지를 문장으로): "{msg}"')
         self.box(s, M, BAND_Y, W - 2 * M, BAND_H, NAVY, MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.12)
         self.text(s, msg, M + 32, BAND_Y, W - 2 * M - 64, BAND_H, 20, WHITE, True, anchor=MSO_ANCHOR.MIDDLE,
                   lines=1, what='결론 띠')
@@ -235,11 +273,15 @@ class Deck:
                   lines=1, what='패널 제목')
         return y + 84
 
-    def bullets(self, s, points, x, y, w, size=18, gap=20, numbered=False, max_lines=3, what='설명'):
-        """설명 항목. 각 항목은 max_lines줄까지. 다음 항목 y를 실제 줄 수에 맞춰 내린다."""
+    def bullets(self, s, points, x, y, w, size=18, gap=20, numbered=False, max_lines=3, what='설명',
+                bottom=None):
+        """설명 항목. 각 항목은 max_lines줄까지. 다음 항목 y를 실제 줄 수에 맞춰 내린다.
+        bottom(패널 안쪽 아래 끝)을 넘는 항목이 있으면 경고한다."""
         line_h = size * 2 * 1.3
         for i, p in enumerate(points):
             n = min(count_lines(p, w - 40, size), max_lines)
+            if bottom is not None and y + n * line_h > bottom:
+                self.warnings.append(f'{self.page}장 {what} 패널 아래로 넘침(항목 수를 줄이거나 문장을 줄이기): "{p}"')
             if numbered:
                 self.box(s, x, y + 3, 28, 28, BLUE, MSO_SHAPE.OVAL)
                 self.text(s, str(i + 1), x, y + 3, 28, 28, 13, WHITE, True, PP_ALIGN.CENTER, MSO_ANCHOR.MIDDLE)
@@ -255,11 +297,10 @@ class Deck:
               meta='부서명  ·  작성자  ·  2026. 00. 00.', style='photo'):
         """표지. 제목은 보고서 이름(기간+대상+보고 종류). style='photo'(기본) 또는 'wafer'."""
         s = self.slide()
-        if style == 'wafer':
-            self.picture(s, 'wafer', 1180, 120, 740, 860, {'left': 0.63, 'top': 0.08, 'bottom': 0.12})
-        else:
-            self.picture(s, 'cover-photo', 1060, 0, 860, H)
-            self.box(s, 1060, 0, 380, H, WHITE, MSO_SHAPE.RIGHT_TRIANGLE)
+        # 표지 그림은 흰 배경에 맞춰 세로 4:5로 생성한 것(cover-wafer·cover-fab)을 자르지 않고 오른쪽 전체 높이에 넣는다
+        key = 'cover-wafer' if style == 'wafer' else 'cover-fab'
+        if self.img[key].exists():
+            self.fit_image(s, self.img[key], W - 864, 0, 864, H)
         self.logo_at(s, M + 32, 80, 150)
         self.text(s, title, M + 32, 250, 940, 380, 48, NAVY, True, anchor=MSO_ANCHOR.BOTTOM, spacing=1.1,
                   lines=2, what='표지 제목')
@@ -357,7 +398,7 @@ class Deck:
         if points:
             x2, w2 = col(8, 4)
             py = self.panel(s, x2, BODY_Y, w2, bottom - BODY_Y, points_head)
-            self.bullets(s, points, x2 + 28, py + 8, w2 - 56, numbered=True, max_lines=4, gap=28)
+            self.bullets(s, points, x2 + 28, py + 8, w2 - 56, numbered=True, max_lines=4, gap=28, bottom=bottom - 20)
         if band:
             self.band(s, band)
         return s
@@ -380,7 +421,8 @@ class Deck:
                      line=None if on else LINE, radius=0.05)
             self.text(s, label, x + 32, BODY_Y + 28, cw - 64, 36, 18, NAVY if on else MUTED, True,
                       lines=1, what='지표 이름')
-            self.text(s, value, x + 32, BODY_Y + 70, cw - 64, 96, 44, BLUE if on else INK, True, wrap=False)
+            self.text(s, value, x + 32, BODY_Y + 70, cw - 64, 96, 44, BLUE if on else INK, True, wrap=False,
+                      lines=1, what='지표 값(단위는 지표 이름이나 변화 줄로)')
             self.text(s, delta, x + 32, BODY_Y + 190, cw - 64, 36, 18, BLUE if on else MUTED, True,
                       lines=1, what='증감')
         bottom = BODY_BOTTOM if band else BODY_BOTTOM_FULL
@@ -389,9 +431,9 @@ class Deck:
             py = self.panel(s, M, py0, W - 2 * M, bottom - py0, points_head)
             half = (len(points) + 1) // 2
             cw2 = (W - 2 * M - 56 - 48) / 2
-            self.bullets(s, points[:half], M + 28, py, cw2, max_lines=2)
+            self.bullets(s, points[:half], M + 28, py, cw2, max_lines=2, bottom=bottom - 20)
             if points[half:]:
-                self.bullets(s, points[half:], M + 28 + cw2 + 48, py, cw2, max_lines=2)
+                self.bullets(s, points[half:], M + 28 + cw2 + 48, py, cw2, max_lines=2, bottom=bottom - 20)
         if band:
             self.band(s, band)
         return s
@@ -434,7 +476,7 @@ class Deck:
         if notes:
             x2, w2 = col(8, 4)
             py = self.panel(s, x2, BODY_Y, w2, bottom - BODY_Y, notes_head)
-            self.bullets(s, notes, x2 + 28, py + 8, w2 - 56, numbered=True, max_lines=4, gap=28)
+            self.bullets(s, notes, x2 + 28, py + 8, w2 - 56, numbered=True, max_lines=4, gap=28, bottom=bottom - 20)
         if band:
             self.band(s, band)
         return s
@@ -448,7 +490,7 @@ class Deck:
         bottom = BODY_BOTTOM if band else BODY_BOTTOM_FULL
         x, w = col(0, 5)
         py = self.panel(s, x, BODY_Y, w, bottom - BODY_Y, points_head)
-        self.bullets(s, points, x + 28, py + 8, w - 56, numbered=True, max_lines=4, gap=28)
+        self.bullets(s, points, x + 28, py + 8, w - 56, numbered=True, max_lines=4, gap=28, bottom=bottom - 20)
         x2, w2 = col(5, 7)
         iy = self.panel(s, x2, BODY_Y, w2, bottom - BODY_Y, image_head)
         ih = bottom - iy - 70
@@ -479,7 +521,7 @@ class Deck:
             dh = sum(min(count_lines(d, w - 96, 17), 2) * 44 + 12 for d in desc)
             ih = bottom - iy - 28 - dh
             if desc:
-                self.bullets(s, desc, x + 28, iy + ih + 16, w - 56, size=17, gap=12, max_lines=2)
+                self.bullets(s, desc, x + 28, iy + ih + 16, w - 56, size=17, gap=12, max_lines=2, bottom=bottom - 20)
             if image and Path(image).exists():
                 self.fit_image(s, image, x + 28, iy, w - 56, ih)
             else:
@@ -504,7 +546,7 @@ class Deck:
         for i, (head, pts) in enumerate((left, right)):
             x, w = col(i * 6, 6)
             py = self.panel(s, x, BODY_Y, w, bottom - BODY_Y, head)
-            self.bullets(s, pts, x + 28, py + 8, w - 56, max_lines=3, gap=24)
+            self.bullets(s, pts, x + 28, py + 8, w - 56, max_lines=3, gap=24, bottom=bottom - 20)
         if band:
             self.band(s, band)
         return s
@@ -518,11 +560,12 @@ class Deck:
         bottom = BODY_BOTTOM if band else BODY_BOTTOM_FULL
         x, w = col(0, 8)
         py = self.panel(s, x, BODY_Y, w, bottom - BODY_Y, points_head)
-        self.bullets(s, points, x + 28, py + 12, w - 56, numbered=True, max_lines=3, gap=36)
+        self.bullets(s, points, x + 28, py + 12, w - 56, numbered=True, max_lines=3, gap=36, bottom=bottom - 20)
         x2, w2 = col(8, 4)
         self.box(s, x2, BODY_Y, w2, bottom - BODY_Y, BLUE_SOFT, MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.03)
         self.text(s, big_label, x2 + 40, BODY_Y + 56, w2 - 80, 40, 20, NAVY, True, lines=1, what='큰 숫자 이름')
-        self.text(s, big, x2 + 40, BODY_Y + 110, w2 - 80, 160, 88, BLUE, True, wrap=False)
+        self.text(s, big, x2 + 40, BODY_Y + 110, w2 - 80, 160, 80, BLUE, True, wrap=False,
+                  lines=1, what='큰 숫자')
         if big_detail:
             self.hline(s, x2 + 40, x2 + w2 - 40, BODY_Y + 300, RULE, 1)
             self.text(s, big_detail, x2 + 40, BODY_Y + 330, w2 - 80, 220, 18, INK, spacing=1.4,
@@ -584,7 +627,7 @@ class Deck:
         bottom = BODY_BOTTOM if band else BODY_BOTTOM_FULL
         n = len(points)
         w = (W - 2 * M - (n - 1) * GUT) / n
-        y = BODY_Y + 50
+        y = BODY_Y + 64
         self.hline(s, M, W - M, y, LINE, 3)
         self.hline(s, M, M + (w + GUT) * current + 14, y, BLUE, 3)
         for i, (date, head, body) in enumerate(points):
@@ -592,7 +635,8 @@ class Deck:
             on = i == current
             self.box(s, x, y - 14, 28, 28, BLUE if i <= current else WHITE, MSO_SHAPE.OVAL,
                      None if i <= current else GREY)
-            self.text(s, date, x + 44, y - 26, w - 44, 50, 22, BLUE if on else NAVY, True, anchor=MSO_ANCHOR.MIDDLE)
+            self.text(s, date, x, y - 76, w, 40, 22, BLUE if on else NAVY, True, anchor=MSO_ANCHOR.MIDDLE,
+                      lines=1, what='일정 날짜')  # 날짜는 선 위에
             cy = y + 50
             self.box(s, x, cy, w, bottom - cy, BLUE_SOFT if on else WHITE, MSO_SHAPE.ROUNDED_RECTANGLE,
                      line=None if on else LINE, radius=0.04)
@@ -618,7 +662,7 @@ class Deck:
             self.box(s, x, BODY_Y + 32, w, 32, BLUE if on else GREY)
             self.text(s, head, x + 32, BODY_Y, w - 64, 64, 22, WHITE, True, anchor=MSO_ANCHOR.MIDDLE,
                       lines=1, what='비교 제목')
-            self.bullets(s, items, x + 32, BODY_Y + 96, w - 64, max_lines=3, gap=28, what='비교 항목')
+            self.bullets(s, items, x + 32, BODY_Y + 96, w - 64, max_lines=3, gap=28, what='비교 항목', bottom=bottom - 20)
         if band:
             self.band(s, band)
         return s
@@ -636,10 +680,10 @@ class Deck:
         bottom = BODY_BOTTOM_FULL
         x, w = col(0, 5)
         py = self.panel(s, x, top, w, bottom - top, '확인한 내용')
-        self.bullets(s, findings, x + 28, py + 4, w - 56, max_lines=3, gap=24)
+        self.bullets(s, findings, x + 28, py + 4, w - 56, max_lines=3, gap=24, bottom=bottom - 20)
         x2, w2 = col(5, 7)
         ty = self.panel(s, x2, top, w2, bottom - top, '다음 단계')
-        cols = [(x2 + 28, w2 - 56 - 380, '할 일'), (x2 + w2 - 28 - 380, 170, '담당'), (x2 + w2 - 28 - 210, 210, '기한')]
+        cols = [(x2 + 28, w2 - 56 - 420, '할 일'), (x2 + w2 - 28 - 420, 220, '담당'), (x2 + w2 - 28 - 200, 200, '기한')]
         self.box(s, x2 + 28, ty, w2 - 56, 48, BLUE_SOFT)
         for cx, cw, h in cols:
             self.text(s, h, cx + 14, ty, cw - 28, 48, 16, NAVY, True, anchor=MSO_ANCHOR.MIDDLE)
