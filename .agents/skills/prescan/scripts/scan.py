@@ -261,8 +261,9 @@ def main():
 
     n = 0
     skipped = 0
+    text_limit = None if only_roots else o.max_text
     for f in lst:
-        if n >= o.max_text:
+        if text_limit is not None and n >= text_limit:
             break
         t = None
         e = f['ext']

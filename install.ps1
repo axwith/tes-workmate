@@ -54,7 +54,7 @@ if ($env:WORKMATE_FROM) {
 }
 
 # 3. 설치 또는 업데이트
-$skills = 'prescan','onboard','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
+$skills = 'prescan','onboard','onboarding','collect','inbox-sort','wrap','make-skill','recall','dashboard','thickness-map','onboarding','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check'
 if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
   Say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
   foreach ($s in $skills) {
@@ -97,54 +97,29 @@ schtasks /Create /F /SC HOURLY /TN $tn /TR "wscript.exe `"$vbs`"" | Out-Null
 if ($LASTEXITCODE -eq 0) { Say "기억 자동 정리를 1시간마다 돌도록 등록했습니다($tn)." } else { Say '기억 자동 정리 등록에 실패했습니다. 대화를 시작할 때마다 정리됩니다.' }
 
 # 5. 최근 파일 미리 읽기 — Codex 샌드박스 밖(지금 이 PowerShell)에서 돌려야 문서·다운로드·PDF를 다 읽는다
-Say '최근 파일을 미리 읽는 중입니다(1분 안팎)...'
 $scanPs = Join-Path $Dir '.agents\skills\prescan\scripts\scan.ps1'
 $rolesDir = Join-Path $Dir '.agents\skills\prescan\sample\pcs'
-$roles = [ordered]@{ '1' = @('research', '연구소'); '2' = @('cs', 'CS'); '3' = @('mfg', '제조'); '4' = @('qa', '품질'); '5' = @('support', '지원') }
-function ScanSample($r) { Say "예시 자료($r)로 세팅합니다."; powershell -NoProfile -ExecutionPolicy Bypass -File $scanPs -Force -OnlyRoots -Roots (Join-Path $rolesDir $r) | ForEach-Object { Say $_ } }
-if ($env:WORKMATE_SAMPLE -and (Test-Path (Join-Path $rolesDir $env:WORKMATE_SAMPLE))) {
-  ScanSample $env:WORKMATE_SAMPLE   # 강사 시연·시험용: 내 PC 파일 대신 예시 직무 자료로
-} else {
-  $scanArgs = @('-Force')
-  if ($env:WORKMATE_SCAN_ROOTS) { $scanArgs += @('-OnlyRoots', '-Roots') + ($env:WORKMATE_SCAN_ROOTS -split ';') }   # 시험·직무 프로필용: 지정 폴더만
-  powershell -NoProfile -ExecutionPolicy Bypass -File $scanPs @scanArgs | ForEach-Object { Say $_ }
-  # 최근 업무 파일이 거의 없으면(새 PC 등) 가까운 직무의 예시 자료로 세팅한다
-  $csvPath = Join-Path $Dir 'memory\scan\recent-files.csv'
-  $cnt = if (Test-Path $csvPath) { @(Import-Csv $csvPath -Encoding UTF8).Count } else { 0 }
-  if ($cnt -lt 5 -and (Test-Path $rolesDir)) {
-    Say '최근 업무 파일이 거의 없어 예시 자료로 세팅합니다. 가장 가까운 직무 번호를 고르세요.'
-    foreach ($k in $roles.Keys) { Say "  $k. $($roles[$k][1])" }
-    $a = try { Read-Host '  번호(1~5, 그냥 Enter는 4)' } catch { '' }
-    if (-not $roles.Contains("$a")) { $a = '4' }
-    ScanSample $roles["$a"][0]
-  }
+if (-not $env:WORKMATE_SAMPLE -and -not $env:WORKMATE_SCAN_ROOTS) {
+  try { $env:WORKMATE_SCAN_ROOTS = Read-Host '  주 업무 폴더 경로(Enter는 기본 검색)' } catch { $env:WORKMATE_SCAN_ROOTS = '' }
 }
-powershell -NoProfile -ExecutionPolicy Bypass -File $sync -Quiet   # 첫 색인 — 스캔 뒤에 돌려야 PC 전체를 한 번 더 읽지 않는다
-
-# 6. 1차 세팅까지 설치기가 끝낸다 — 사용자가 처음 열 때 이미 자기 업무에 맞춰져 있게
-$codexExe = $null
-$pkg = Get-AppxPackage 'OpenAI.Codex' -ErrorAction SilentlyContinue | Sort-Object Version -Descending | Select-Object -First 1
-if ($pkg) { $c = Join-Path $pkg.InstallLocation 'app\resources\codex.exe'; if (Test-Path $c) { $codexExe = $c } }
-if (-not $codexExe) { $c = Get-Command codex -ErrorAction SilentlyContinue; if ($c) { $codexExe = $c.Source } }
-$authOk = Test-Path (Join-Path $env:USERPROFILE '.codex\auth.json')
-$stateFile = Join-Path $Dir 'memory\state.md'
-function SetupDone { (Test-Path $stateFile) -and ((Get-Content $stateFile -Raw -Encoding UTF8) -match 'prescan: 완료') }
-if ($codexExe -and $authOk -and -not (SetupDone)) {
-  Say '내 업무에 맞춰 세팅하는 중입니다(2~3분)...'
-  Push-Location $Dir
-  # PowerShell 5.1은 codex가 stderr에 쓰는 안내를 오류로 바꿔 멈추므로 Start-Process로 분리해 돌린다
-  $empty = Join-Path $env:TEMP ('workmate-empty-' + [guid]::NewGuid().ToString('N').Substring(0,8) + '.txt'); Set-Content -LiteralPath $empty -Value '' -Encoding ASCII
-  Start-Process -FilePath $codexExe -ArgumentList @('exec', '--skip-git-repo-check', '-s', 'workspace-write', '-C', "`"$Dir`"", '"처음 세팅해 줘. PRESCAN.md 절차만 끝까지 하고, 첫 응답(first-reply)은 보내지 말고 세팅 완료라고만 답해."') `
-    -WorkingDirectory $Dir -RedirectStandardInput $empty -RedirectStandardOutput (Join-Path $Dir 'memory\setup.log') -RedirectStandardError (Join-Path $Dir 'memory\setup.err.log') -NoNewWindow -Wait
-  Pop-Location
-  powershell -NoProfile -ExecutionPolicy Bypass -File $sync -Quiet
-  # 첫 응답(first-reply)은 사용자가 처음 말을 걸 때 나가야 하므로 상태를 '미실행'으로 되돌려 둔다
-  if (Test-Path $stateFile) { $st = Get-Content $stateFile -Raw -Encoding UTF8; [IO.File]::WriteAllText($stateFile, ($st -replace 'onboard:\s*\S+', 'onboard: 미실행'), (New-Object Text.UTF8Encoding $false)) }
-  if (SetupDone) { Say '세팅 완료.' } else { Say '세팅을 끝내지 못했습니다. Codex에서 폴더를 열고 아무 말이나 보내면 이어서 합니다.' }
-} elseif (-not $authOk) { Say 'Codex 앱에 로그인돼 있지 않아 세팅은 처음 대화 때 진행합니다.' }
+Say '최근 파일을 미리 읽는 중입니다(1분 안팎)...'
+$scanArgs = @('-Force')
+if ($env:WORKMATE_SAMPLE -and (Test-Path (Join-Path $rolesDir $env:WORKMATE_SAMPLE))) {
+  $scanArgs += @('-OnlyRoots', '-Roots', (Join-Path $rolesDir $env:WORKMATE_SAMPLE)); Say "선택한 스캔 경로: 예시 자료($($env:WORKMATE_SAMPLE))"
+} elseif ($env:WORKMATE_SCAN_ROOTS) {
+  $scanArgs += @('-OnlyRoots', '-Roots') + ($env:WORKMATE_SCAN_ROOTS -split ';'); Say "선택한 스캔 경로: $($env:WORKMATE_SCAN_ROOTS)"
+} else { Say '선택한 스캔 경로: 기본 검색(최근 항목·문서·다운로드)' }
+powershell -NoProfile -ExecutionPolicy Bypass -File $scanPs @scanArgs | ForEach-Object { Say $_ }
+powershell -NoProfile -ExecutionPolicy Bypass -File $sync -Quiet
+$csvPath = Join-Path $Dir 'memory\scan\recent-files.csv'
+$found = if (Test-Path $csvPath) { @(Import-Csv $csvPath -Encoding UTF8).Count } else { 0 }
+$textDir = Join-Path $Dir 'memory\scan\text'
+$text = if (Test-Path $textDir) { @(Get-ChildItem $textDir -File).Count } else { 0 }
+Say "발견 파일 수: $found개"
+Say "본문 추출 수: $text개"
 
 Write-Host "`n설치 완료: $Dir`n"
 Say '다음:'
 Say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
-Say '2. "안녕하세요"라고 보내 보세요.'
+Say '2. "온보딩 해 줘"라고 보내 설치된 자료를 확인하고 세팅합니다.'
 Start-Process explorer.exe $Dir

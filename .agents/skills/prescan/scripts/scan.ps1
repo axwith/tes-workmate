@@ -96,8 +96,9 @@ function ZipText($p, $pattern) {
   return $sb.ToString()
 }
 $n = 0; $skipped = 0
+$textLimit = if ($OnlyRoots) { $null } else { $MaxText }
 foreach ($f in $list) {
-  if ($n -ge $MaxText) { break }
+  if ($null -ne $textLimit -and $n -ge $textLimit) { break }
   $t = $null
   switch ($f.ext) {
     '.docx' { $t = ZipText $f.path '^word/document\.xml$' }

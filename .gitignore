@@ -2,6 +2,7 @@
 memory/scan/*
 !memory/scan/.gitkeep
 memory/state.md
+memory/onboarding-state.md
 .DS_Store
 Thumbs.db
 memory/index.db*

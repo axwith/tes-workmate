@@ -60,7 +60,7 @@ main() {
   # 3. 설치 또는 업데이트
   if [ -f "$DIR/AGENTS.md" ]; then
     say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
-    for s in prescan onboard collect inbox-sort wrap make-skill recall dashboard thickness-map excel-to-report meeting-brief foreign-matter-car cross-check; do
+    for s in prescan onboard onboarding collect inbox-sort wrap make-skill recall dashboard thickness-map onboarding ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check; do
       to="$DIR/.agents/skills/$s"
       [ -e "$to" ] && rm -rf "$to"
       mkdir -p "$DIR/.agents/skills"
@@ -150,64 +150,42 @@ EOF
   ROLES="$DIR/.agents/skills/prescan/sample/pcs"
   scan_sample() { say "예시 자료($1)로 세팅합니다."; "$PY" "$SCAN" --force --only-roots --roots "$ROLES/$1" </dev/null | while IFS= read -r l; do say "$l"; done; }
   if [ -z "$PY" ]; then
-    say 'Python을 찾지 못해 최근 파일 미리 읽기를 건너뜁니다. Codex에서 처음 대화할 때 읽습니다.'
+    say 'Python을 찾지 못해 사전 스캔을 건너뜁니다. Codex에서 온보딩할 때 진행합니다.'
   else
+    if [ -z "$WORKMATE_SAMPLE" ] && [ -z "$WORKMATE_SCAN_ROOTS" ] && { exec 3</dev/tty; } 2>/dev/null; then
+      printf '  주 업무 폴더 경로(Enter는 기본 검색): ' >/dev/tty
+      read -r WORKMATE_SCAN_ROOTS <&3 || WORKMATE_SCAN_ROOTS=''
+      exec 3<&-
+    fi
     say '최근 파일을 미리 읽는 중입니다(1분 안팎)...'
     if [ -n "$WORKMATE_SAMPLE" ] && [ -d "$ROLES/$WORKMATE_SAMPLE" ]; then
-      scan_sample "$WORKMATE_SAMPLE"   # 강사 시연·시험용: 내 Mac 파일 대신 예시 직무 자료로
+      scan_sample "$WORKMATE_SAMPLE"
     else
       set --
-      if [ -n "$WORKMATE_SCAN_ROOTS" ]; then   # 시험·직무 프로필용: 지정 폴더만
+      if [ -n "$WORKMATE_SCAN_ROOTS" ]; then
         set -- --only-roots --roots
         OLDIFS="$IFS"; IFS=':;'
         for r in $WORKMATE_SCAN_ROOTS; do [ -n "$r" ] && set -- "$@" "$r"; done
         IFS="$OLDIFS"
+        say "선택한 스캔 경로: $WORKMATE_SCAN_ROOTS"
+      else
+        say '선택한 스캔 경로: 기본 검색(최근 항목·문서·다운로드)'
       fi
       "$PY" "$SCAN" --force "$@" </dev/null | while IFS= read -r l; do say "$l"; done
-      # 최근 업무 파일이 거의 없으면(새 Mac 등) 가까운 직무의 예시 자료로 세팅한다
-      CSV="$DIR/memory/scan/recent-files.csv"
-      CNT=0
-      [ -f "$CSV" ] && CNT="$("$PY" -c 'import csv,sys; print(len(list(csv.DictReader(open(sys.argv[1], encoding="utf-8-sig")))))' "$CSV" 2>/dev/null || echo 0)"
-      if [ "$CNT" -lt 5 ] && [ -d "$ROLES" ]; then
-        say '최근 업무 파일이 거의 없어 예시 자료로 세팅합니다. 가장 가까운 직무 번호를 고르세요.'
-        say '  1. 연구소'; say '  2. CS'; say '  3. 제조'; say '  4. 품질'; say '  5. 지원'
-        a=''
-        if { exec 3</dev/tty; } 2>/dev/null; then
-          printf '  번호(1~5, 그냥 Enter는 4): ' >/dev/tty
-          read -r a <&3 || a=''
-          exec 3<&-
-        fi
-        case "$a" in 1) role=research ;; 2) role=cs ;; 3) role=mfg ;; 5) role=support ;; *) role=qa ;; esac
-        scan_sample "$role"
-      fi
     fi
-    "$PY" "$SYNC" --quiet </dev/null   # 첫 색인 — 스캔 뒤에 돌려야 Mac 전체를 한 번 더 읽지 않는다
-  fi
-
-  # 6. 1차 세팅까지 설치기가 끝낸다 — 사용자가 처음 열 때 이미 자기 업무에 맞춰져 있게
-  CODEX=''
-  for c in /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex "$HOME/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex" "$(command -v codex 2>/dev/null)"; do
-    [ -n "$c" ] && [ -x "$c" ] && { CODEX="$c"; break; }
-  done
-  STATE="$DIR/memory/state.md"
-  setup_done() { [ -f "$STATE" ] && grep -q 'prescan: 완료' "$STATE"; }
-  if [ -n "$CODEX" ] && [ -f "$HOME/.codex/auth.json" ] && ! setup_done; then
-    say '내 업무에 맞춰 세팅하는 중입니다(2~3분)...'
-    (cd "$DIR" && "$CODEX" exec --skip-git-repo-check -s workspace-write -C "$DIR" \
-      "처음 세팅해 줘. PRESCAN.md 절차만 끝까지 하고, 첫 응답(first-reply)은 보내지 말고 세팅 완료라고만 답해." \
-      </dev/null >"$DIR/memory/setup.log" 2>"$DIR/memory/setup.err.log")
-    [ -n "$PY" ] && "$PY" "$SYNC" --quiet </dev/null
-    # 첫 응답(first-reply)은 사용자가 처음 말을 걸 때 나가야 하므로 상태를 '미실행'으로 되돌려 둔다
-    [ -f "$STATE" ] && /usr/bin/perl -Mutf8 -CSD -0777 -i -pe 's/onboard:\s*\S+/onboard: 미실행/g' "$STATE"
-    if setup_done; then say '세팅 완료.'; else say '세팅을 끝내지 못했습니다. Codex에서 폴더를 열고 아무 말이나 보내면 이어서 합니다.'; fi
-  elif [ ! -f "$HOME/.codex/auth.json" ]; then
-    say 'Codex 앱에 로그인돼 있지 않아 세팅은 처음 대화 때 진행합니다.'
+    "$PY" "$SYNC" --quiet </dev/null
+    CSV="$DIR/memory/scan/recent-files.csv"
+    FOUND=0; TEXT=0
+    [ -f "$CSV" ] && FOUND=$("$PY" -c 'import csv,sys; print(len(list(csv.DictReader(open(sys.argv[1], encoding="utf-8-sig")))))' "$CSV" 2>/dev/null || echo 0)
+    [ -d "$DIR/memory/scan/text" ] && TEXT=$(find "$DIR/memory/scan/text" -type f | wc -l | tr -d ' ')
+    say "발견 파일 수: $FOUND개"
+    say "본문 추출 수: $TEXT개"
   fi
 
   printf '\n설치 완료: %s\n\n' "$DIR"
   say '다음:'
-  say '1. ChatGPT 앱의 Codex에서 이 폴더를 프로젝트로 엽니다.'
-  say '2. "안녕하세요"라고 보내 보세요.'
+  say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
+  say '2. "온보딩 해 줘"라고 보내 설치된 자료를 확인하고 세팅합니다.'
   [ -z "$WORKMATE_NO_OPEN" ] && open "$DIR" </dev/null
   return 0
 }
