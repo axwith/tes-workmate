@@ -38,7 +38,7 @@ description: 기존 자료를 읽고 독자·목적·자료·슬라이드 목차
 ## 3. 승인 후 만들기
 
 - 승인받은 계획과 자료만 사용해 `reports/YYYY-MM-DD_<주제>_초안.pptx`로 저장한다.
-- 공통 템플릿은 `tes-template.pptx`(14장)이고 생성기는 `scripts/build_template.py`의 `Deck` 클래스다. 초안은 이 클래스로 만든다. 디자인 규칙은 `DESIGN-GUIDE.md`를 따른다. Python `python-pptx`가 없으면 설치하지 말고 사용자에게 준비 필요를 알린다.
+- 공통 템플릿은 `tes-template.pptx`(14장)이고 생성기는 `scripts/build_template.py`의 `Deck` 클래스다. 초안은 이 클래스로 만든다. 디자인 규칙은 `DESIGN-GUIDE.md`를 따른다. 실행 Python은 설치 스크립트(`install.ps1`·`install.sh`)가 준비한 Python이다(`memory/env.md`의 `python:` 경로, 없으면 Codex 런타임 Python). `python-pptx`가 없으면 설치하지 않고, 같은 내용을 보고서(문서)로 만들고 "PPT 도구를 준비하지 못해 보고서로 만듭니다. 설치 스크립트를 다시 실행하면 PPT 도구가 준비됩니다"라고 그대로 한 줄 알린다(가이드·보조강사가 이 문구를 기다린다).
   ```python
   import sys; sys.path.insert(0, '.agents/skills/ppt-draft/scripts')
   from build_template import Deck

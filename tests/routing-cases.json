@@ -42,6 +42,8 @@
     {"id": "n3", "text": "3200개 중에 불량 48개면 불량률 몇 퍼센트야?", "expected": null},
     {"id": "n4", "text": "이 표 정리해 줘: A라인 12건, B라인 7건, C라인 3건", "expected": null},
     {"id": "n5", "text": "PPM이랑 퍼센트 차이가 뭐야?", "expected": null},
+    {"id": "t1", "text": "팀즈 품질팀 채널에 올라온 11월 보고서 가져와 줘", "expected": "teams"},
+    {"id": "t2", "text": "나한테 공유된 자료 뭐 있는지 봐 줘", "expected": "teams"},
     {"id": "u1", "text": "앞으로 보고서는 항상 결론부터 세 줄로 써 줘", "expected": null},
     {"id": "u2", "text": "매번 표에 단위 빼먹지 마", "expected": null}
   ]

@@ -1,5 +1,6 @@
 # 개인 업무 데이터는 저장소에 올리지 않는다 (설치된 워크스페이스에서만 쓰임)
 memory/scan/*
+memory/teams/
 !memory/scan/.gitkeep
 memory/state.md
 memory/onboarding-state.md

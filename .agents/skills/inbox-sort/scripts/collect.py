@@ -51,7 +51,7 @@ def main():
                        capture_output=True, stdin=subprocess.DEVNULL)
         try:
             with open(os.path.join(WS, 'memory', 'scan', 'recent-files.csv'), encoding='utf-8-sig', newline='') as f:
-                items = list(csv.DictReader(f))
+                items = [r for r in csv.DictReader(f) if 'online-only' not in r.get('why', '')]  # 온라인 전용은 내려받지 않는다
         except Exception:
             items = []
 

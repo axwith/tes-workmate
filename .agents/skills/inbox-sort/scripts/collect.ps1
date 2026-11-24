@@ -14,7 +14,7 @@ if ($From) {
     Select-Object -First $MaxFiles | ForEach-Object { [pscustomobject]@{ path=$_.FullName; modified=$_.LastWriteTime.ToString('yyyy-MM-dd'); why='folder' } }
 } else {
   & (Join-Path $ws '.agents\skills\prescan\scripts\scan.ps1') -Days $Days -MaxFiles $MaxFiles -MaxText 0 | Out-Null
-  $items = Import-Csv -LiteralPath (Join-Path $ws 'memory\scan\recent-files.csv') -Encoding UTF8
+  $items = Import-Csv -LiteralPath (Join-Path $ws 'memory\scan\recent-files.csv') -Encoding UTF8 | Where-Object { $_.why -notlike '*online-only*' }   # 온라인 전용은 내려받지 않는다
 }
 
 $rows = @(); $n = 0

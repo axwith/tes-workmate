@@ -60,7 +60,7 @@ main() {
   # 3. 설치 또는 업데이트
   if [ -f "$DIR/AGENTS.md" ]; then
     say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
-    for s in prescan onboard inbox-sort wrap dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check; do
+    for s in prescan onboard inbox-sort wrap dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check teams; do
       to="$DIR/.agents/skills/$s"
       [ -e "$to" ] && rm -rf "$to"
       mkdir -p "$DIR/.agents/skills"
@@ -98,6 +98,69 @@ main() {
   if ! { [ -f "$CFG" ] && grep -qF "$KEY" "$CFG"; }; then
     printf '\n%s\ntrust_level = "trusted"\n' "$KEY" >> "$CFG"
   fi
+
+  # 3-2. 문서 작업(PPT·엑셀·PDF)용 Python 준비 — 설치할 때 한 번에 끝낸다. 관리자 권한 없이 사용자 범위에만 설치하고, 실패해도 계속한다
+  #   Codex 런타임 Python에 python-pptx가 있으면 그대로 → 이미 있는 Python에 pip --user → uv로 ~/.workmate/py에 설치. 결과는 memory/env.md
+  ensure_python() {
+    local PKGS='python-pptx openpyxl pypdf Pillow' CHECK='import pptx'
+    local RUNTIME="$RT/python/bin/python3" BASE="$HOME/.workmate"
+    local VENV="$HOME/.workmate/py" VENVPY="$HOME/.workmate/py/bin/python"
+    local RESULT='' HOW='' TRIES='' p UV
+    test_py() {   # python-pptx까지 되면 ok, 실행만 되면 bare, 안 되면 빈 값
+      [ -n "$1" ] && [ -x "$1" ] || { echo ''; return; }
+      if [ "$1" = /usr/bin/python3 ] && ! has_clt; then echo ''; return; fi
+      "$1" -c 'import sys' </dev/null >/dev/null 2>&1 || { echo ''; return; }
+      if "$1" -c "$CHECK" </dev/null >/dev/null 2>&1; then echo ok; else echo bare; fi
+    }
+    local CANDS=("$RUNTIME" "$VENVPY" /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3)
+    for p in "${CANDS[@]}"; do
+      [ "$(test_py "$p")" = ok ] && { RESULT="$p"; HOW='이미 있음'; break; }
+    done
+    if [ -z "$RESULT" ]; then
+      for p in "${CANDS[@]}"; do
+        [ "$p" = "$RUNTIME" ] && continue   # Codex 런타임은 앱이 관리하므로 건드리지 않는다
+        [ "$(test_py "$p")" = bare ] || continue
+        say "Python($p)에 문서 작업용 패키지를 넣는 중..."
+        PIP_DISABLE_PIP_VERSION_CHECK=1 "$p" -m pip install --user --quiet $PKGS </dev/null >/dev/null 2>&1
+        if [ "$(test_py "$p")" = ok ]; then RESULT="$p"; HOW='pip --user'; break; fi
+        TRIES="$TRIES pip --user($p) 실패 /"
+      done
+    fi
+    if [ -z "$RESULT" ]; then
+      say 'Python을 사용자 폴더에 설치하는 중(uv, 1~3분)...'
+      UV="$BASE/uv/uv"
+      if [ ! -x "$UV" ]; then
+        mkdir -p "$BASE/uv"
+        curl -LsSf https://astral.sh/uv/install.sh </dev/null 2>/dev/null |
+          env UV_INSTALL_DIR="$BASE/uv" UV_NO_MODIFY_PATH=1 sh >/dev/null 2>&1
+      fi
+      if [ -x "$UV" ]; then
+        [ -x "$VENVPY" ] || UV_NATIVE_TLS=1 "$UV" venv "$VENV" --python 3.12 --seed --quiet </dev/null >/dev/null 2>&1
+        UV_NATIVE_TLS=1 "$UV" pip install --python "$VENVPY" --quiet $PKGS </dev/null >/dev/null 2>&1
+        if [ "$(test_py "$VENVPY")" = ok ]; then RESULT="$VENVPY"; HOW='uv'; else TRIES="$TRIES uv 실패(패키지 확인 안 됨) /"; fi
+      else
+        TRIES="$TRIES uv 실패(내려받기 막힘) /"
+      fi
+    fi
+    mkdir -p "$DIR/memory"
+    {
+      printf '# 실행 환경 (설치 스크립트가 자동 기록)\n\n- 확인 시각: %s\n' "$(date '+%Y-%m-%d %H:%M')"
+      if [ -n "$RESULT" ]; then
+        printf -- '- python: %s\n- 방법: %s\n- 패키지: %s\n' "$RESULT" "$HOW" "$(echo $PKGS | sed 's/ /, /g')"
+      else
+        printf -- '- python: 없음(자동 설치 실패)\n- 시도:%s\n- 대응: PPT는 보고서(문서)로 대신 만든다. 다시 시도하려면 설치 한 줄을 다시 실행한다.\n' "${TRIES% /}"
+      fi
+    } > "$DIR/memory/env.md"
+    if [ -n "$RESULT" ]; then
+      say "Python 준비 완료($HOW): $RESULT"
+      [ -n "$PY" ] || PY="$RESULT"   # 위에서 못 찾았으면 방금 준비한 Python으로 사전 스캔을 돌린다
+    else
+      say "Python 자동 설치 실패:${TRIES% /}"
+    fi
+    return 0
+  }
+  say 'PPT·엑셀 작업용 Python을 확인합니다(없으면 사용자 폴더에 자동 설치, 1~3분)...'
+  ensure_python
 
   # 4. 기억 자동 정리 등록: 1시간마다 대화 기록을 옮기고 검색 색인을 만든다(AI 없이, 창 없이)
   SYNC="$DIR/.agents/skills/wrap/scripts/sync.py"
@@ -150,10 +213,10 @@ EOF
   ROLES="$DIR/.agents/skills/prescan/sample/pcs"
   scan_sample() { say "예시 자료($1)로 세팅합니다."; "$PY" "$SCAN" --force --only-roots --roots "$ROLES/$1" </dev/null | while IFS= read -r l; do say "$l"; done; }
   if [ -z "$PY" ]; then
-    say 'Python을 찾지 못해 사전 스캔을 건너뜁니다. Codex에서 온보딩할 때 진행합니다.'
+    say 'Python 자동 설치에 실패해 사전 스캔을 건너뜁니다. Codex에서 온보딩할 때 진행합니다(memory/env.md 참고).'
   else
     if [ -z "$WORKMATE_SAMPLE" ] && [ -z "$WORKMATE_SCAN_ROOTS" ] && { exec 3</dev/tty; } 2>/dev/null; then
-      printf '  주 업무 폴더 경로(Enter는 기본 검색): ' >/dev/tty
+      printf '  기본 검색에 더할 업무 폴더 경로(Enter는 기본 검색만): ' >/dev/tty
       read -r WORKMATE_SCAN_ROOTS <&3 || WORKMATE_SCAN_ROOTS=''
       exec 3<&-
     fi
@@ -163,13 +226,14 @@ EOF
     else
       set --
       if [ -n "$WORKMATE_SCAN_ROOTS" ]; then
-        set -- --only-roots --roots
+        set -- --roots
+        [ "$WORKMATE_SCAN_ONLY" = 1 ] && set -- --only-roots --roots
         OLDIFS="$IFS"; IFS=':;'
         for r in $WORKMATE_SCAN_ROOTS; do [ -n "$r" ] && set -- "$@" "$r"; done
         IFS="$OLDIFS"
-        say "선택한 스캔 경로: $WORKMATE_SCAN_ROOTS"
+        say "선택한 스캔 경로: 기본 검색 + $WORKMATE_SCAN_ROOTS"
       else
-        say '선택한 스캔 경로: 기본 검색(최근 항목·문서·다운로드)'
+        say '선택한 스캔 경로: 기본 검색(최근 항목·문서·다운로드·클라우드 폴더)'
       fi
       "$PY" "$SCAN" --force "$@" </dev/null | while IFS= read -r l; do say "$l"; done
     fi
