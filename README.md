@@ -21,7 +21,7 @@ irm https://raw.githubusercontent.com/axwith/tes-workmate/main/get.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/axwith/tes-workmate/main/install.sh | bash
 ```
 
-설치 중 주 업무 폴더를 묻습니다. 경로를 입력하면 그 폴더만 먼저 사전 스캔하고, Enter를 누르면 기본 검색을 사용합니다. 설치가 끝나면(2~4분) 폴더가 열립니다(Windows `문서\3교시-Codex-활용하기`, Mac `~/Documents/3교시-Codex-활용하기`). 출력에서 선택 경로·발견 파일 수·본문 추출 수를 확인할 수 있습니다.
+설치 중 주 업무 폴더를 묻습니다. 경로를 입력하면 그 폴더만 먼저 사전 스캔하고, Enter를 누르면 기본 검색을 사용합니다. 설치가 끝나면(2~4분) 폴더가 열립니다(Windows `문서\tes-workmate`, Mac `~/Documents/tes-workmate`). 출력에서 선택 경로·발견 파일 수·본문 추출 수를 확인할 수 있습니다.
 
 1. Codex 앱에서 그 폴더를 프로젝트로 엽니다.
 2. 대화창에 `@onboard`를 입력해 보냅니다.

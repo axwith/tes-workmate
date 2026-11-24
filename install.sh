@@ -9,7 +9,7 @@
 
 main() {
   REPO='axwith/tes-workmate'
-  DIR="${WORKMATE_DIR:-$HOME/Documents/3교시-Codex-활용하기}"
+  DIR="${WORKMATE_DIR:-$HOME/Documents/tes-workmate}"
   RT="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies"
   say() { printf '  %s\n' "$1"; }
   has_clt() { xcode-select -p >/dev/null 2>&1; }   # 없으면 /usr/bin/git·python3이 설치 창을 띄운다

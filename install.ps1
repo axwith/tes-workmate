@@ -6,7 +6,7 @@
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $Repo = 'axwith/tes-workmate'
-$Dir = if ($env:WORKMATE_DIR) { $env:WORKMATE_DIR } else { Join-Path ([Environment]::GetFolderPath('MyDocuments')) '3교시-Codex-활용하기' }
+$Dir = if ($env:WORKMATE_DIR) { $env:WORKMATE_DIR } else { Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'tes-workmate' }
 function Say($m) { Write-Host "  $m" }
 
 Write-Host "`nworkmate 설치를 시작합니다 → $Dir`n"
