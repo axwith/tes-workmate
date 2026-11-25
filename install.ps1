@@ -280,5 +280,5 @@ Write-Host "`n설치 완료: $Dir`n"
 Say '다음:'
 Say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
 Say '2. 대화창에 @onboard를 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
-Say '3. (선택) ChatGPT에서 하던 대화로 내 업무를 더 채우려면 @chatgpt-import 를 보냅니다.'
+Say '3. (선택) @onboard가 ChatGPT 대화도 함께 훑습니다. 더 가져올 대화는 @chatgpt-import 견적 비교 대화 찾아서 가져와 줘 처럼 보냅니다.'
 Start-Process explorer.exe $Dir
