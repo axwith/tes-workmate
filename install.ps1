@@ -89,9 +89,11 @@ if ($env:WORKMATE_FROM) {
 }
 
 # 3. 설치 또는 업데이트
-$skills = 'prescan','onboard','inbox-sort','wrap','dashboard','thickness-map','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check','teams'
+$skills = 'prescan','onboard','inbox-sort','wrap','dashboard','thickness-map','ppt-draft','excel-to-report','meeting-brief','foreign-matter-car','cross-check','chatgpt-import'
 if (Test-Path (Join-Path $Dir 'AGENTS.md')) {
   Say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
+  # 빠진 기본 스킬(teams, 2026-11-25)은 지운다. 실패해도 설치는 계속한다
+  foreach ($old in @('teams')) { $p = Join-Path $Dir ".agents\skills\$old"; if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue } }
   foreach ($s in $skills) {
     $to = Join-Path $Dir ".agents\skills\$s"
     if (Test-Path $to) { try { Remove-Item $to -Recurse -Force } catch { Start-Sleep 2; Remove-Item $to -Recurse -Force -ErrorAction SilentlyContinue } }
@@ -278,4 +280,5 @@ Write-Host "`n설치 완료: $Dir`n"
 Say '다음:'
 Say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
 Say '2. 대화창에 @onboard를 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
+Say '3. (선택) ChatGPT에서 하던 대화로 내 업무를 더 채우려면 @chatgpt-import 를 보냅니다.'
 Start-Process explorer.exe $Dir

@@ -20,7 +20,7 @@
 ## 2. 최근 파일 찾기 (로컬 스크립트)
 - **`memory/scan/recent-files.csv`가 있으면 `scan.ps1`을 절대 다시 돌리지 않는다**(설치기가 샌드박스 밖에서 이미 읽어 둔 것이 더 정확하다. 다시 돌리면 샌드박스 때문에 덜 읽히고 지정 폴더 설정도 사라진다). Codex 샌드박스 안에서는 문서·다운로드 폴더를 다 읽지 못한다. 없을 때만 아래를 실행한다(목록이 있으면 스크립트가 스스로 멈춘다).
 - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File .agents/skills/prescan/scripts/scan.ps1`
-  - 최근 30일 동안 열어 본 파일(Windows 최근 항목·Office 최근 문서), 문서·바탕화면·동기화 폴더에서 수정한 파일, 다운로드에 새로 받은 파일을 찾는다. 동기화 폴더는 이미 PC에 있는 것만 자동으로 찾는다: `OneDrive*`, OneDrive 레지스트리의 폴더 위치, 팀즈·SharePoint "동기화"로 생긴 `%USERPROFILE%\<회사명>\<사이트> - <라이브러리>`, 구글 드라이브.
+  - 최근 30일 동안 열어 본 파일(Windows 최근 항목·Office 최근 문서), 문서·바탕화면·동기화 폴더에서 수정한 파일, 다운로드에 새로 받은 파일을 찾는다. 동기화 폴더는 이미 PC에 있는 것만 자동으로 찾는다: `OneDrive*`, OneDrive 레지스트리의 폴더 위치, SharePoint "동기화"로 생긴 `%USERPROFILE%\<회사명>\<사이트> - <라이브러리>`, 구글 드라이브.
   - 결과: `memory/scan/recent-files.csv`(목록), `memory/scan/text/`(문서 본문 앞부분), `memory/scan/scan-roots.csv`(본 폴더와 `기본`·`자동 발견`·`추가`·`제외` 표시).
   - 범위 설정은 `memory/scan/scan-config.json`이다(`include` 더할 폴더, `exclude` 뺄 폴더, `useDiscovered`, `maxDepth`, `extensions`, `skipOnlineOnly`). 설치 때 넣은 업무 폴더는 기본 검색에 더해진다. 요약은 `memory/env.md`의 "사전 스캔 범위".
   - 온라인 전용(클라우드에만 있는) 파일은 내려받지 않고 목록에만 남긴다. 그 행은 `copy`가 비고 `why`에 `online-only`가 붙는다. 이름·위치로 판단하고, 내용이 꼭 필요하면 사용자가 그 파일을 지정할 때만 연다.

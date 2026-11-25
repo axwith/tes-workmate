@@ -60,7 +60,8 @@ main() {
   # 3. 설치 또는 업데이트
   if [ -f "$DIR/AGENTS.md" ]; then
     say '이미 설치돼 있습니다. 기본 스킬만 새 버전으로 바꾸고, 기억·규칙·업무 폴더는 그대로 둡니다.'
-    for s in prescan onboard inbox-sort wrap dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check teams; do
+    rm -rf "$DIR/.agents/skills/teams" 2>/dev/null || true   # 빠진 기본 스킬(2026-11-25)
+    for s in prescan onboard inbox-sort wrap dashboard thickness-map ppt-draft excel-to-report meeting-brief foreign-matter-car cross-check chatgpt-import; do
       to="$DIR/.agents/skills/$s"
       [ -e "$to" ] && rm -rf "$to"
       mkdir -p "$DIR/.agents/skills"
@@ -250,6 +251,7 @@ EOF
   say '다음:'
   say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
   say '2. 대화창에 @onboard를 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
+  say '3. (선택) ChatGPT에서 하던 대화로 내 업무를 더 채우려면 @chatgpt-import 를 보냅니다.'
   [ -z "$WORKMATE_NO_OPEN" ] && open "$DIR" </dev/null
   return 0
 }

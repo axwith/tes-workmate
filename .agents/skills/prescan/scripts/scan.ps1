@@ -121,7 +121,7 @@ if ($OnlyRoots) {
     if ($onWindows -and (Test-Path $acc)) {
       Get-ChildItem $acc | ForEach-Object { $uf = (Get-ItemProperty $_.PSPath).UserFolder; if ($uf) { Add-Root $uf 'onedrive' '자동 발견' ('registry:Accounts\' + $_.PSChildName + '\UserFolder') } }
     }
-    # 2-3) 팀즈·SharePoint '동기화' 버튼: %USERPROFILE%\<조직명>\<사이트> - <라이브러리>
+    # 2-3) SharePoint '동기화' 버튼: %USERPROFILE%\<조직명>\<사이트> - <라이브러리>
     $std = @('Documents','Desktop','Downloads','Pictures','Music','Videos','Favorites','Links','Contacts','Searches','Saved Games','AppData','3D Objects','Public')
     Get-ChildItem -LiteralPath $HomeDir -Directory | Where-Object { $std -notcontains $_.Name -and $_.Name -notlike 'OneDrive*' -and $_.Name -notlike '.*' } | ForEach-Object {
       $libs = @(Get-ChildItem -LiteralPath $_.FullName -Directory | Where-Object { $_.Name -match '^.+ - .+$' })
