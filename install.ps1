@@ -5,6 +5,8 @@
 # git이 없으면 묻지 않고 Git for Windows를 사용자 범위로 설치한다(관리자 권한 불필요. 일시 오류는 다시 시도, 그래도 안 되면 winget 사용자 범위).
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
+# 진행 막대를 끈다 — 5.1에서 진행 막대가 위쪽 줄을 덮었다 다시 그릴 때 한글이 두 번 찍힌다(binna 재현 11-25)
+$ProgressPreference = 'SilentlyContinue'
 $Repo = 'axwith/tes-workmate'
 $Dir = if ($env:WORKMATE_DIR) { $env:WORKMATE_DIR } else { Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'tes-workmate' }
 function Say($m) { Write-Host "  $m" }
@@ -280,5 +282,4 @@ Write-Host "`n설치 완료: $Dir`n"
 Say '다음:'
 Say '1. Codex 앱에서 이 폴더를 프로젝트로 엽니다.'
 Say '2. 대화창에 @onboard를 입력해 보내면 설치된 자료를 확인하고 세팅을 시작합니다.'
-Say '3. (선택) @onboard가 ChatGPT 대화도 함께 훑습니다. 더 가져올 대화는 @chatgpt-import 견적 비교 대화 찾아서 가져와 줘 처럼 보냅니다.'
 Start-Process explorer.exe $Dir
