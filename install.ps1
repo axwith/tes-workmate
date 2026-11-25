@@ -2,7 +2,7 @@
 #   irm https://raw.githubusercontent.com/axwith/tes-workmate/main/get.ps1 | iex   (get.ps1이 이 파일을 받아 -File로 실행한다. 이 파일을 iex로 직접 돌리면 BOM 때문에 깨진다)
 #   또는 받은 폴더에서: powershell -ExecutionPolicy Bypass -File install.ps1
 # 옵션(환경변수): WORKMATE_DIR=설치 위치(기본 문서\workmate), WORKMATE_FROM=로컬 원본 폴더, WORKMATE_SCAN_ROOTS=스캔할 폴더(;로 구분, 지정하면 그 폴더만)
-# git이 없으면 묻지 않고 설치한다(MinGit을 사용자 폴더에, 관리자 권한 불필요. 일시 오류는 다시 시도, 그래도 안 되면 winget 사용자 범위).
+# git이 없으면 묻지 않고 Git for Windows를 사용자 범위로 설치한다(관리자 권한 불필요. 일시 오류는 다시 시도, 그래도 안 되면 winget 사용자 범위).
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $Repo = 'axwith/tes-workmate'
@@ -26,26 +26,33 @@ if (-not $git) {
   $ProgressPreference = 'SilentlyContinue'
   try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
   $gitOk = $false
-  # MinGit(압축 파일)을 사용자 폴더에 푼다 — UAC가 뜨지 않는다. 고정 버전 주소 → GitHub API 최신 순.
-  # 409·429·5xx·연결 끊김·깨진 zip은 2·4·8초(+무작위) 기다렸다 다시 시도한다(1회차에서 409로 한 번 멈춘 적이 있다)
+  # Git for Windows 설치 파일을 사용자 범위(/CURRENTUSER, UAC 없음)로 무인 설치한다. 고정 버전 주소 → GitHub API 최신 순.
+  # 409·429·5xx·연결 끊김·덜 받은 파일은 2·4·8초(+무작위) 기다렸다 다시 받는다(1회차에서 409로 한 번 멈춘 적이 있다)
   foreach ($src in 'fixed', 'api') {
     for ($n = 1; $n -le 4 -and -not $gitOk; $n++) {
+      $gz = Join-Path $env:TEMP ('git-setup-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.exe')
       try {
-        if ($src -eq 'fixed') { $u = 'https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/MinGit-2.56.1-64-bit.zip' }
+        if ($src -eq 'fixed') { $u = 'https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/Git-2.56.1-64-bit.exe' }
         else {
           $rel = Invoke-RestMethod -UseBasicParsing 'https://api.github.com/repos/git-for-windows/git/releases/latest' -TimeoutSec 20
-          $u = ($rel.assets | Where-Object { $_.name -match '^MinGit-[\d\.]+-64-bit\.zip$' } | Select-Object -First 1).browser_download_url
+          $u = ($rel.assets | Where-Object { $_.name -match '^Git-[\d\.]+-64-bit\.exe$' } | Select-Object -First 1).browser_download_url
         }
-        $gz = Join-Path $env:TEMP ('mingit-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.zip')
-        Invoke-WebRequest -UseBasicParsing $u -OutFile $gz -TimeoutSec 120
-        Expand-Archive $gz $gitHome -Force
-        Remove-Item $gz -Force -ErrorAction SilentlyContinue
-        $gitOk = Test-Path "$gitHome\cmd\git.exe"
+        Invoke-WebRequest -UseBasicParsing $u -OutFile $gz -TimeoutSec 180
+        if ((Get-Item $gz).Length -lt 20MB) { throw (New-Object System.IO.InvalidDataException 'short') }
       } catch {
+        Remove-Item $gz -Force -ErrorAction SilentlyContinue
         $code = 0; try { if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode } } catch {}
         if (-not ($code -eq 0 -or @(408, 409, 425, 429, 500, 502, 503, 504) -contains $code)) { break }
         if ($n -lt 4) { Start-Sleep -Milliseconds ([int]((2 * [Math]::Pow(2, $n - 1) + (Get-Random -Maximum 1.0)) * 1000)) }
+        continue
       }
+      try {
+        $gp = Start-Process -FilePath $gz -ArgumentList "/VERYSILENT /NORESTART /NOCANCEL /SP- /SUPPRESSMSGBOXES /CURRENTUSER /NOICONS /DIR=`"$gitHome`"" -WindowStyle Hidden -PassThru
+        if (-not $gp.WaitForExit(240000)) { try { $gp.Kill() } catch {} }
+      } catch {}
+      Remove-Item $gz -Force -ErrorAction SilentlyContinue
+      $gitOk = Test-Path "$gitHome\cmd\git.exe"
+      break
     }
     if ($gitOk) { break }
   }
