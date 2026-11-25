@@ -33,7 +33,7 @@ ChatGPT 대화는 읽기만 한다. 대화를 보내기·지우기·옮기기·�
    - 목록: `list_threads({mode: "history", source: "chatgpt", limit: 50})`. 다음 쪽은 받은 `nextCursor`를 `cursor`로 넘긴다. 보관한 대화는 사용자가 원할 때만 `archived: true`로 따로 부른다.
    - 읽기: `read_thread({threadId, turnLimit: 30, maxOutputCharsPerItem: 2000})`. 더 오래된 부분이 꼭 필요할 때만 받은 커서로 더 읽는다.
    - `codex_app`의 다른 도구(보내기·지우기·옮기기·보관·이름 바꾸기)는 쓰지 않는다.
-2. **내보내기 파일**: `00-inbox/` 아래에 ChatGPT 데이터 내보내기 ZIP(안에 `conversations.json`)이나 `conversations*.json`이 있으면 그것을 쓴다. 사용자가 "내보내기 파일 넣었어"라고 했으면 이 길이 먼저다.
+2. **내보내기 파일**: `00-inbox/` 아래에 ChatGPT 데이터 내보내기 ZIP(안에 `conversations.json`)이나 `conversations*.json`이 있으면 그것을 쓴다. 이 파일이 `00-inbox/`에 있으면 1번보다 이 길을 먼저 쓴다(사용자가 일부러 넣은 자료다).
    - Python은 `memory/env.md`의 `python:` 경로다(없으면 `python3`·`python`).
    - 목록: `<python> .agents/skills/chatgpt-import/scripts/chatgpt_export.py list <ZIP 또는 json 경로> --limit 50`
    - 읽기: `<python> .agents/skills/chatgpt-import/scripts/chatgpt_export.py show <경로> <번호> [<번호> …] --max-chars 2000`
